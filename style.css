@@ -7,6 +7,9 @@
   --muted: #8b939e;
   --accent: #5fd4a0;
   --sel: #ffd257;
+  --card-paper: #fff;
+  --card-ink: #383837;
+  --card-red: #cb5b5d;
   --ease: cubic-bezier(.45, .05, .25, 1);
   color-scheme: dark;
 }
@@ -77,6 +80,7 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
   --safe-left: 0px;
   --cw: 92px;
   --ch: 129px;
+  --card-radius: calc(var(--cw) * .15);
   position: relative;
   width: var(--sw);
   height: var(--sh);
@@ -198,16 +202,19 @@ kbd {
 #deck .deck-stack {
   position: absolute;
   inset: 0;
-  border-radius: calc(var(--cw) * .085);
+  overflow: hidden;
+  border-radius: var(--card-radius);
   box-shadow:
-    inset 0 0 0 calc(var(--cw) * .045) #f4f1ea,
-    inset 0 0 0 calc(var(--cw) * .06) rgba(0, 0, 0, .2),
-    1px 1px 0 #d9d5cc,
-    2px 2px 0 #bdb8ae,
-    3px 3px 0 #a19c92,
-    4px 6px 14px rgba(0, 0, 0, .45);
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 1px 0 #dddcd8,
+    0 3px 0 #a5a5a0,
+    0 5px 0 #dddcd8,
+    0 7px 0 #9b9b96,
+    0 10px 18px rgba(0, 0, 0, .28);
 }
 #deck.empty .deck-stack { background: none; box-shadow: none; border: 2px dashed rgba(255, 255, 255, .2); }
+#deck.empty .deck-stack::before,
+#deck.empty .back-emblem { display: none; }
 #deck-count {
   position: absolute;
   left: 50%;
@@ -221,11 +228,25 @@ kbd {
 }
 
 .back-art {
-  background-color: #26337f;
-  background-image:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .16) 0 16%, transparent 17%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, .09) 0 2px, transparent 2px 7px),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .09) 0 2px, transparent 2px 7px);
+  background: var(--card-ink);
+}
+.back-art::before {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: calc(var(--cw) * .095);
+}
+.back-emblem {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--card-red);
+}
+.back-emblem .suit-mark {
+  width: 42%;
+  filter: drop-shadow(0 calc(var(--cw) * .018) calc(var(--cw) * .01) rgba(0, 0, 0, .22));
 }
 
 /* ------------------------------------------------------------------ cards */
@@ -246,37 +267,41 @@ kbd {
 .card .shadow {
   position: absolute;
   inset: 6% 5%;
-  border-radius: calc(var(--cw) * .09);
-  box-shadow: 0 calc(var(--cw) * .2) calc(var(--cw) * .32) rgba(0, 0, 0, .5);
+  border-radius: var(--card-radius);
+  box-shadow: 0 calc(var(--cw) * .18) calc(var(--cw) * .3) rgba(0, 0, 0, .35);
   opacity: 0;
 }
 .card-inner { position: absolute; inset: 0; transform-style: preserve-3d; }
 .face {
   position: absolute;
   inset: 0;
-  border-radius: calc(var(--cw) * .085);
+  border-radius: var(--card-radius);
   overflow: hidden;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 .front {
-  background: linear-gradient(170deg, #ffffff 0%, #f4f2ed 100%);
-  color: #1b1b22;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(0, 0, 0, .12);
+  background: var(--card-paper);
+  color: var(--card-ink);
+  box-shadow:
+    inset 0 -2px 0 #e7e5e2,
+    0 1px 3px rgba(0, 0, 0, .16),
+    0 3px 7px rgba(0, 0, 0, .12);
 }
-.front.red { color: #d0263a; }
+.front.red { color: var(--card-red); }
 .back {
   transform: rotateY(180deg);
   box-shadow:
-    inset 0 0 0 calc(var(--cw) * .045) #f4f1ea,
-    inset 0 0 0 calc(var(--cw) * .06) rgba(0, 0, 0, .2),
-    0 1px 2px rgba(0, 0, 0, .35);
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .12),
+    0 2px 5px rgba(0, 0, 0, .2);
 }
 .card.selected .front {
   box-shadow:
     0 0 0 calc(var(--cw) * .03) var(--sel),
-    0 0 calc(var(--cw) * .16) rgba(255, 210, 87, .55),
-    0 1px 2px rgba(0, 0, 0, .35);
+    0 0 calc(var(--cw) * .12) rgba(255, 210, 87, .28),
+    inset 0 -2px 0 #e7e5e2,
+    0 3px 7px rgba(0, 0, 0, .12);
 }
 
 .corner {
@@ -284,39 +309,35 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: .92;
-  font-weight: 700;
-}
-.corner.tl { left: 5%; top: 4%; }
-.corner.br { right: 5%; bottom: 4%; transform: rotate(180deg); }
-.corner b { font-size: calc(var(--cw) * .21); letter-spacing: -.06em; }
-.corner i { font-style: normal; font-size: calc(var(--cw) * .17); }
-
-.center { position: absolute; inset: 0; }
-.pip {
-  position: absolute;
-  font-size: calc(var(--cw) * .19);
+  gap: calc(var(--cw) * .025);
+  width: 23%;
   line-height: 1;
-  transform: translate(-50%, -50%);
 }
-.pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
-.center.ace { display: grid; place-items: center; font-size: calc(var(--cw) * .52); line-height: 1; }
-.court-frame {
-  position: absolute;
-  left: 22%;
-  right: 22%;
-  top: 18%;
-  bottom: 18%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid currentColor;
-  border-radius: calc(var(--cw) * .05);
-  background: linear-gradient(160deg, rgba(255, 210, 87, .22), rgba(255, 210, 87, .05));
+.corner.tl { left: 6%; top: 7%; }
+.corner.br { right: 6%; bottom: 7%; transform: rotate(180deg); }
+.corner b {
+  font: 750 calc(var(--cw) * .235)/1 -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -.055em;
 }
-.court-frame b { font: 700 calc(var(--cw) * .36)/1 Georgia, "Times New Roman", serif; }
-.court-frame i { font-style: normal; font-size: calc(var(--cw) * .2); line-height: 1; }
+.corner b.rank-ten { font-size: calc(var(--cw) * .205); }
+.suit-mark { display: block; flex: none; height: auto; overflow: visible; }
+.suit-highlight {
+  fill: none;
+  stroke: #fff;
+  stroke-opacity: .3;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.corner .suit-mark { width: 68%; }
+.corner .suit-highlight { display: none; }
+.center { position: absolute; inset: 0; display: grid; place-items: center; }
+.center .suit-mark {
+  width: 57%;
+  filter: drop-shadow(0 calc(var(--cw) * .022) calc(var(--cw) * .01) rgba(56, 56, 55, .2));
+}
+.front.red .center .suit-mark { filter: drop-shadow(0 calc(var(--cw) * .022) calc(var(--cw) * .01) rgba(161, 61, 63, .22)); }
+.center.ace .suit-mark { width: 65%; }
 
 /* ------------------------------------------------- play buttons & overflow */
 

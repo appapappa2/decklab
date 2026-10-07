@@ -3,6 +3,7 @@ import { buildPanel, loadSettings, saveSettings } from './settings.js';
 import { Game } from './game.js';
 import { Input } from './input.js';
 import { DebugOverlay } from './debug.js';
+import { cardBackHTML } from './cards.js';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -19,6 +20,7 @@ function haptic(pattern) {
 }
 
 const screenEl = $('screen');
+$('deck').querySelector('.deck-stack').innerHTML = cardBackHTML();
 const game = new Game(
   {
     screen: screenEl,
