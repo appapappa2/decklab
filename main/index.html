@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Deck Lab">
+  <meta name="theme-color" content="#0a0c0f">
+  <link rel="icon" href="data:,">
+  <title>The Deck Lab · Hand Feel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="booting">
+  <div id="app">
+    <main id="stage">
+      <div id="device-fit">
+        <div id="device-scale">
+          <div id="device">
+            <div id="screen">
+              <div id="table">
+                <div id="playzone"><span>Drag here to play</span></div>
+                <div id="deck">
+                  <div class="deck-stack back-art"></div>
+                  <span id="deck-count">52</span>
+                </div>
+              </div>
+              <div id="cards"></div>
+              <canvas id="debug"></canvas>
+              <button id="gear" aria-label="Lab settings">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L4.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.7h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+              </button>
+              <div class="statusbar"><span>9:41</span><span class="battery"></span></div>
+              <div class="island"></div>
+              <div class="home-indicator"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="device-bar">
+        <button id="rotate" title="Rotate (R)">⟲ Rotate</button>
+        <span id="device-label">iPhone 15</span>
+        <span class="keys"><kbd>R</kbd> rotate · <kbd>G</kbd> debug · <kbd>Space</kbd> draw</span>
+      </div>
+    </main>
+
+    <aside id="panel" aria-label="Lab settings">
+      <header>
+        <div>
+          <div class="title">Deck Lab</div>
+          <div class="sub">Hand feel prototype</div>
+        </div>
+        <button id="panel-close" aria-label="Close settings">✕</button>
+      </header>
+      <details class="help">
+        <summary>Gestures</summary>
+        <ul>
+          <li><b>Slide</b> across the hand to peek at cards (mouse: just hover)</li>
+          <li><b>Tap</b> a card to select it</li>
+          <li><b>Drag up</b> past the play line, or flick, to play</li>
+          <li><b>Drag sideways</b> low in the hand to reorder (or long-press)</li>
+          <li><b>Tap the deck</b> to draw · <b>tap the pile</b> to return played cards</li>
+          <li>Mouse works for everything: click = tap, click-drag = drag</li>
+          <li>Double-click a setting's label to reset it</li>
+        </ul>
+      </details>
+      <div id="panel-body"></div>
+    </aside>
+  </div>
+  <div id="safe-probe"></div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
