@@ -30,6 +30,16 @@ Desktop shortcuts: <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debu
 | Long-press a card | Pick it up without moving (useful for reordering) |
 | Tap the deck / tap the pile | Draw a card / return played cards to the hand |
 
+### Mouse
+
+Everything works with a mouse (Pointer Events), plus some mouse-specific behavior:
+
+- **Hover** over the hand to peek. No click is needed. Toggle with *Mouse → Hover to peek*.
+- **Click** = tap (select). **Click and drag** = drag (play / reorder). **Press and slide** scrubs, same as touch.
+- A dragged card stays **where you grabbed it**, since a cursor doesn't cover the card the way a finger does. Turn off *Mouse → Hold card where grabbed* to use the touch finger offset instead.
+- The cursor shows what's possible: `grab` over the hand, `grabbing` while holding a card, `pointer` over the deck and pile.
+- Pens are treated like the mouse (hover works on pens that support it).
+
 ## Architecture
 
 ```
@@ -61,6 +71,7 @@ Units: **cw** = card widths, **ch** = card heights.
 - **Drag:** pull-out threshold (px of deliberate upward motion), long-press time (0 = off), finger offset, drag scale, velocity tilt (degrees per 1000 px/s; negative flips the direction), max tilt, reorder on/off.
 - **Play:** play line (fraction of screen height), flick-to-play, flick velocity.
 - **Motion:** hand spring stiffness and damping ratio, a separate stiffer spring for the dragged card, deal stagger.
+- **Mouse:** hover to peek, hold the card where grabbed.
 - **Feedback:** haptics, debug overlay.
 
 ## Known limitations
