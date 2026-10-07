@@ -22,13 +22,14 @@ Desktop shortcuts: <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debu
 | Gesture | Result |
 | --- | --- |
 | Press and slide across the hand | Scrub/peek: the card under your finger lifts, scales up and straightens, and its neighbors spread apart |
-| Tap a card | Toggle selected |
+| Tap a card | Toggle selected; a **Play** button appears above it (same result as the play gesture) |
 | Drag upward | Card detaches and follows your finger (offset above it) and tilts with horizontal velocity |
 | Release above the play line or over the play zone | Plays the card |
 | Fast upward flick | Plays the card even if it's below the line |
 | Drag sideways while low (in the hand zone) | Reorder: the other cards open a gap live |
 | Long-press a card | Pick it up without moving (useful for reordering) |
 | Tap the deck / tap the pile | Draw a card / return played cards to the hand |
+| Swipe the hand / mouse wheel | Scroll the hand when it overflows the screen (see *Screen overflow*) |
 
 ### Mouse
 
@@ -61,13 +62,22 @@ The game code only sees `(width, height, safeArea)`, so the emulated frame and a
 
 ## Lab settings
 
-All settings persist to `localStorage`. Double-click a label to reset that setting, or use **Reset to defaults**. Presets: *Balatro-ish*, *Hearthstone-ish*, *Flat & snappy*, *Tight stack*.
+All settings persist to `localStorage`. Double-click a label to reset that setting, or use **Reset to defaults**. Presets: *Balatro-ish*, *Hearthstone-ish*, *Flat & snappy*, *Tight stack*, *Scrolling hand*.
+
+**Import / export:** the panel has a textbox. **Export** (or **Copy**) dumps the current settings as JSON; paste JSON and press **Import** to apply it. Partial JSON is fine, for example `{"overflow": "scroll", "minSpacing": 0.5}`. Unknown keys and invalid values are skipped and reported, and numbers are clamped to the slider range. `window.lab` exposes `{ game, input, settings, device }` in the devtools console for poking around.
 
 Units: **cw** = card widths, **ch** = card heights.
 
 - **Layout:** mode (fan / line / stack), card size, max spacing (compresses automatically to fit), hand width, how much of the hand is hidden below the edge, fan radius (smaller means more curve), fan tilt, stack idle spacing (stack spreads out while touched).
 - **Peek / scrub:** on/off, lift (above the fully visible position), scale, straighten, neighbor spread and falloff (multiplier per card), pick bias (0% = nearest card center, 100% = the visible strip of overlapped cards), hysteresis (resists flicker between two cards).
-- **Select:** lift, multi-select.
+- **Select:** lift, multi-select, Play button on selected cards.
+- **Screen overflow:** what happens when the hand is wider than the screen.
+  - *Compress* squeezes the cards until they fit (the old behavior and the default).
+  - *Overflow + scroll* stops compressing at **min spacing**, lets the hand run off-screen, and makes it scrollable.
+  - **Scroll gesture:** *Swipe* (the hand follows your finger 1:1, with momentum and rubber-banding; drag up still pulls a card), *Edge* (scrub toward a screen edge to auto-scroll; tune with edge zone and speed), or *Proportional* (finger position across the screen maps to the whole hand). The mouse wheel or trackpad always scrolls.
+  - **Fan arc anchored to:** *Screen* (cards roll along a fixed arc like a wheel) or *Hand* (the whole fan slides).
+  - **Hidden cards hint:** none, an edge fade, a "‹ 3" count badge, or both.
+  - Reordering a card near a screen edge also auto-scrolls.
 - **Drag:** pull-out threshold (px of deliberate upward motion), long-press time (0 = off), finger offset, drag scale, velocity tilt (degrees per 1000 px/s; negative flips the direction), max tilt, reorder on/off.
 - **Play:** play line (fraction of screen height), flick-to-play, flick velocity.
 - **Motion:** hand spring stiffness and damping ratio, a separate stiffer spring for the dragged card, deal stagger.

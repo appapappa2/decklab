@@ -27,6 +27,9 @@
                 </div>
               </div>
               <div id="cards"></div>
+              <div class="edge left" id="edge-left"><span class="count"></span></div>
+              <div class="edge right" id="edge-right"><span class="count"></span></div>
+              <div id="ui"></div>
               <canvas id="debug"></canvas>
               <button id="gear" aria-label="Lab settings">
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L4.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.7h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
@@ -57,10 +60,11 @@
         <summary>Gestures</summary>
         <ul>
           <li><b>Slide</b> across the hand to peek at cards (mouse: just hover)</li>
-          <li><b>Tap</b> a card to select it</li>
+          <li><b>Tap</b> a card to select it, then tap <b>Play</b> above it</li>
           <li><b>Drag up</b> past the play line, or flick, to play</li>
           <li><b>Drag sideways</b> low in the hand to reorder (or long-press)</li>
           <li><b>Tap the deck</b> to draw · <b>tap the pile</b> to return played cards</li>
+          <li>Overflowing hand: swipe it, or use the mouse wheel / trackpad</li>
           <li>Mouse works for everything: click = tap, click-drag = drag</li>
           <li>Double-click a setting's label to reset it</li>
         </ul>

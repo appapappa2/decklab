@@ -1,10 +1,15 @@
 import { CardSprite, createDeck, shuffle } from './cards.js';
 import { clamp, computeMetrics, handSlots, nearestSlot } from './layout.js';
+import { Spring } from './spring.js';
 import { VelocityTracker } from './velocity.js';
+
+const SCROLL_K = 600; // stiffness of the hand-scroll spring
+const SCROLL_ZETA = 1;
 
 /**
  * Owns card state (deck / hand / played pile) and turns it into spring targets
- * every frame. Input calls into the small API below (setPeek, pickUp, moveDrag, release...).
+ * every frame. Input calls into the small API below (setPeek, pickUp, moveDrag,
+ * release, scroll...).
  */
 export class Game {
   constructor(els, settings, haptic) {
@@ -23,10 +28,21 @@ export class Game {
 
     this.drag = null;
     this.peek = -1;
-    this.active = false; // a finger is on the hand
+    this.active = false; // a pointer is on (or hovering) the hand
     this.slots = [];
     this.gap = -1;
     this.hot = false;
+
+    // Hand scrolling (overflow mode)
+    this.scroll = new Spring(0, 0.01);
+    this.scrollDrag = false;
+    this.half = 0; // current max scroll each way
+    this.scrubX = null; // x of a pressed finger/mouse scrubbing the hand
+    this.hoverX = null; // x of a hovering mouse over the hand
+    this.hintL = -1;
+    this.hintR = -1;
+
+    this.buttons = new Set(); // sprites that currently show a Play button
   }
 
   // ---------------------------------------------------------------- layout
@@ -40,15 +56,26 @@ export class Game {
 
   relayout() {
     const m = (this.m = computeMetrics(this.W, this.H, this.safe, this.s));
-    const { screen, deck, playzone } = this.els;
+    const { screen, deck, playzone, edgeL, edgeR } = this.els;
     screen.style.setProperty('--cw', `${m.cw}px`);
     screen.style.setProperty('--ch', `${m.ch}px`);
+    screen.dataset.hint = this.s.overflowHint;
     deck.style.left = `${m.deck.x - m.cw / 2}px`;
     deck.style.top = `${m.deck.y - m.ch / 2}px`;
     playzone.style.left = `${m.pz.x - m.pz.w / 2}px`;
     playzone.style.top = `${m.pz.y - m.pz.h / 2}px`;
     playzone.style.width = `${m.pz.w}px`;
     playzone.style.height = `${m.pz.h}px`;
+    const edgeTop = `${m.handTop - m.ch * 0.3}px`;
+    edgeL.style.top = edgeTop;
+    edgeR.style.top = edgeTop;
+    edgeL.style.width = `${m.safe.left + m.cw * 0.7}px`;
+    edgeR.style.width = `${m.safe.right + m.cw * 0.7}px`;
+  }
+
+  /** Hand layout at the current scroll position. */
+  layoutHand(extra = 0, spread = this.active || !!this.drag) {
+    return handSlots(this.hand.length + extra, this.m, this.s, spread, this.scroll.v);
   }
 
   // --------------------------------------------------------------- actions
@@ -68,6 +95,8 @@ export class Game {
     this.played = [];
     this.drag = null;
     this.peek = -1;
+    this.scroll.set(0);
+    this.scrollDrag = false;
     this.setHot(false);
     this.deck = shuffle(createDeck());
     this.draw(count, old.length ? 320 : 150);
@@ -104,6 +133,17 @@ export class Game {
     this.updatePile();
   }
 
+  /** Play a card straight from the hand (Play button, discard). */
+  playFromHand(sp) {
+    const i = this.hand.indexOf(sp);
+    if (i < 0) return;
+    this.hand.splice(i, 1);
+    if (this.peek === i) this.peek = -1;
+    else if (this.peek > i) this.peek--;
+    this.play(sp);
+    this.haptic(15);
+  }
+
   returnPlayed() {
     if (!this.played.length) return;
     const now = performance.now();
@@ -118,9 +158,7 @@ export class Game {
   discardRandom() {
     const ready = this.hand.filter((sp) => sp.waitUntil <= performance.now());
     if (!ready.length) return;
-    const sp = ready[(Math.random() * ready.length) | 0];
-    this.hand.splice(this.hand.indexOf(sp), 1);
-    this.play(sp);
+    this.playFromHand(ready[(Math.random() * ready.length) | 0]);
   }
 
   sortHand(by = 'suit') {
@@ -188,7 +226,7 @@ export class Game {
     const m = this.m;
     const s = this.s;
     const peeking = current >= 0 && current < n;
-    const { slots, spacing } = handSlots(n, m, s, peeking || this.active);
+    const { slots, spacing } = this.layoutHand(0, peeking || this.active);
     const anySelected = this.hand.some((sp) => sp.selected);
     let top = m.handTop - (anySelected ? s.selectLift * m.ch : 0) - 12;
     if (peeking && s.peekEnabled) {
@@ -204,7 +242,7 @@ export class Game {
 
   /** Scrub lookup against the spread-out layout, with hysteresis. */
   slotAt(x, current) {
-    const { slots, spacing } = handSlots(this.hand.length, this.m, this.s, true);
+    const { slots, spacing } = this.layoutHand(0, true);
     return nearestSlot(slots, spacing, x, current, this.s.scrubHysteresis);
   }
 
@@ -216,6 +254,68 @@ export class Game {
     this.active = on;
   }
 
+  // ---------------------------------------------------------------- scroll
+
+  /** Max scroll distance each way for the spread hand (0 = it fits). */
+  scrollRange() {
+    if (this.s.overflow !== 'scroll' || !this.m) return 0;
+    const extra = this.drag && this.drag.gapIndex >= 0 ? 1 : 0;
+    return handSlots(this.hand.length + extra, this.m, this.s, true, 0).half;
+  }
+
+  canScroll() {
+    return this.scrollRange() > 0;
+  }
+
+  /** 1:1 scroll while a finger/mouse drags the hand, rubber-banding past the ends. */
+  dragScrollTo(v) {
+    const h = this.scrollRange();
+    let c = v;
+    if (c < -h) c = -h - (-h - c) * 0.3;
+    else if (c > h) c = h + (c - h) * 0.3;
+    this.scroll.set(c);
+    this.scrollDrag = true;
+  }
+
+  endScrollDrag(vx = 0) {
+    if (!this.scrollDrag) return;
+    this.scrollDrag = false;
+    const h = this.scrollRange();
+    this.scroll.t = clamp(this.scroll.v - vx * this.s.scrollMomentum, -h, h);
+  }
+
+  scrollBy(d) {
+    const h = this.scrollRange();
+    this.scroll.t = clamp(this.scroll.t + d, -h, h);
+  }
+
+  /** Proportional mode: 0 = show the left end of the hand, 1 = the right end. */
+  scrollToFraction(t) {
+    const h = this.scrollRange();
+    this.scroll.t = -h + 2 * h * clamp(t, 0, 1);
+  }
+
+  /** Auto-scroll while scrubbing (edge mode) or reordering near a screen edge. */
+  edgeScroll(dt) {
+    const s = this.s;
+    const m = this.m;
+    if (s.overflow !== 'scroll') return;
+    let ex = null;
+    if (this.drag) {
+      if (s.reorder && this.drag.inHand) ex = this.drag.fx + this.drag.ox;
+    } else if (this.scrubX !== null && s.scrollMode === 'edge') {
+      ex = this.scrubX;
+    }
+    if (ex === null) return;
+    const zone = s.edgeZone * m.W;
+    const left = m.safe.left + zone;
+    const right = m.W - m.safe.right - zone;
+    let v = 0;
+    if (ex < left) v = -s.edgeSpeed * Math.min(1, (left - ex) / zone);
+    else if (ex > right) v = s.edgeSpeed * Math.min(1, (ex - right) / zone);
+    if (v) this.scrollBy(v * dt);
+  }
+
   // ------------------------------------------------------------------ drag
 
   pickUp(index, fx, fy, now, pointerType = 'touch') {
@@ -223,6 +323,7 @@ export class Game {
     if (!sp) return false;
     const m = this.m;
     const s = this.s;
+    this.endScrollDrag(0);
     this.hand.splice(index, 1);
     sp.isDrag = true;
     sp.waitUntil = 0;
@@ -237,30 +338,39 @@ export class Game {
     }
     const tracker = new VelocityTracker();
     tracker.add(now, fx, fy);
-    this.drag = { sprite: sp, fromIndex: index, gapIndex: index, lastGap: index, fx, fy, ox, oy, tracker };
+    this.drag = {
+      sprite: sp, fromIndex: index, gapIndex: index, lastGap: index,
+      fx, fy, ox, oy, tracker, inHand: true,
+    };
     this.peek = -1;
+    this.scrubX = null;
     this.haptic(10);
-    this.moveDrag(fx, fy, now);
+    this.updateDragZone();
     return true;
   }
 
   moveDrag(fx, fy, now) {
     const d = this.drag;
     if (!d) return;
-    const m = this.m;
-    const s = this.s;
     d.fx = fx;
     d.fy = fy;
     d.tracker.add(now, fx, fy);
+    this.updateDragZone();
+  }
 
-    const cardX = fx + d.ox;
-    const cardY = fy + d.oy;
-    const inHand = cardY > m.handTop - m.ch * 0.15;
+  /** Recompute reorder gap + play-zone highlight for the dragged card. */
+  updateDragZone() {
+    const d = this.drag;
+    const m = this.m;
+    const s = this.s;
+    const cardX = d.fx + d.ox;
+    const cardY = d.fy + d.oy;
+    d.inHand = cardY > m.handTop - m.ch * 0.15;
     let gap;
     if (!s.reorder) {
       gap = d.fromIndex; // keep the original slot open so it's clear where it returns
-    } else if (inHand) {
-      const { slots, spacing } = handSlots(this.hand.length + 1, m, s, true);
+    } else if (d.inHand) {
+      const { slots, spacing } = this.layoutHand(1, true);
       gap = nearestSlot(slots, spacing, cardX, d.gapIndex, s.scrubHysteresis, 'x');
       d.lastGap = gap;
     } else {
@@ -305,17 +415,36 @@ export class Game {
   // ----------------------------------------------------------------- frame
 
   update(now, dt) {
+    // Scroll: auto-scroll, clamp, spring.
+    const before = this.scroll.v;
+    this.edgeScroll(dt);
+    if (!this.scrollDrag) {
+      const h = this.scrollRange();
+      this.scroll.t = clamp(this.scroll.t, -h, h);
+      this.scroll.step(dt, SCROLL_K, SCROLL_ZETA);
+    }
+    if (Math.abs(this.scroll.v - before) > 0.01) {
+      // The hand moved under a stationary pointer: re-pick what's under it.
+      if (this.drag) this.updateDragZone();
+      const px = this.scrubX ?? this.hoverX;
+      if (px !== null && this.peek >= 0) {
+        const idx = this.slotAt(px, this.peek);
+        if (idx >= 0 && idx !== this.peek) {
+          this.peek = idx;
+          if (this.scrubX !== null) this.haptic(4);
+        }
+      }
+    }
+
     this.updateTargets(now);
-    const s = this.s;
-    const step = (sp) => {
-      if (sp.isDrag) sp.step(dt, s.dragStiffness, s.dragDamping);
-      else sp.step(dt, s.stiffness, s.damping);
-      sp.render();
-    };
-    for (const sp of this.played) step(sp);
-    for (const sp of this.hand) step(sp);
-    for (const sp of this.leaving) step(sp);
-    if (this.drag) step(this.drag.sprite);
+
+    // While the hand scrolls, cards track it with the stiffer drag spring so
+    // scrolling feels attached rather than floaty.
+    const fast = this.scrollDrag || Math.abs(this.scroll.vel) > 30;
+    for (const sp of this.played) this.stepSprite(sp, dt, false);
+    for (const sp of this.hand) this.stepSprite(sp, dt, fast);
+    for (const sp of this.leaving) this.stepSprite(sp, dt, false);
+    if (this.drag) this.stepSprite(this.drag.sprite, dt, true);
 
     if (this.leaving.length) {
       this.leaving = this.leaving.filter((sp) => {
@@ -324,6 +453,16 @@ export class Game {
         return false;
       });
     }
+
+    this.updatePlayButtons(now);
+    this.updateHints();
+  }
+
+  stepSprite(sp, dt, stiff) {
+    const s = this.s;
+    if (sp.isDrag || stiff) sp.step(dt, s.dragStiffness, s.dragDamping);
+    else sp.step(dt, s.stiffness, s.damping);
+    sp.render();
   }
 
   updateTargets(now) {
@@ -332,9 +471,10 @@ export class Game {
     const drag = this.drag;
     const n = this.hand.length;
     const gap = drag ? drag.gapIndex : -1;
-    const { slots } = handSlots(n + (gap >= 0 ? 1 : 0), m, s, this.active || !!drag);
+    const { slots, half } = this.layoutHand(gap >= 0 ? 1 : 0);
     this.slots = slots;
     this.gap = gap;
+    this.half = half;
     const peek = s.peekEnabled ? this.peek : -1;
 
     for (let i = 0; i < n; i++) {
@@ -392,6 +532,86 @@ export class Game {
     for (const sp of this.leaving) {
       sp.z = 50;
       sp.target(m.deck.x, m.deck.y, 0, 1, 1, 0);
+    }
+  }
+
+  // ---------------------------------------------------------- play buttons
+
+  updatePlayButtons(now) {
+    const want = this.s.playButton;
+    for (const sp of this.hand) {
+      if (want && sp.selected && sp.waitUntil <= now && !this.buttons.has(sp)) this.addPlayButton(sp);
+    }
+    const m = this.m;
+    for (const sp of this.buttons) {
+      if (!want || !sp.selected || sp.isDrag || !this.hand.includes(sp)) {
+        this.removePlayButton(sp);
+        continue;
+      }
+      // Sit just above the card's top edge, following its rotation & scale,
+      // but keep the button itself upright.
+      const r = (sp.rot.v * Math.PI) / 180;
+      const off = (m.ch * sp.scale.v) / 2 + 20;
+      const x = sp.x.v + Math.sin(r) * off;
+      const y = sp.y.v - Math.cos(r) * off;
+      const t = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) translate(-50%,-50%)`;
+      if (t !== sp.playBtnT) {
+        sp.playBtn.style.transform = t;
+        sp.playBtnT = t;
+      }
+    }
+  }
+
+  addPlayButton(sp) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'play-btn';
+    b.textContent = 'Play';
+    b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.playFromHand(sp);
+    });
+    this.els.ui.append(b);
+    sp.playBtn = b;
+    sp.playBtnT = '';
+    this.buttons.add(sp);
+    requestAnimationFrame(() => b.classList.add('show'));
+  }
+
+  removePlayButton(sp) {
+    const b = sp.playBtn;
+    this.buttons.delete(sp);
+    sp.playBtn = null;
+    if (!b) return;
+    b.classList.remove('show');
+    b.disabled = true;
+    setTimeout(() => b.remove(), 180);
+  }
+
+  // --------------------------------------------------------- overflow hints
+
+  updateHints() {
+    let l = 0;
+    let r = 0;
+    if (this.s.overflow === 'scroll' && this.s.overflowHint !== 'none' && this.half > 0) {
+      const m = this.m;
+      const lim = m.cw * 0.1;
+      this.slots.forEach((sl, i) => {
+        if (i === this.gap) return;
+        if (sl.x < m.safe.left + lim) l++;
+        else if (sl.x > m.W - m.safe.right - lim) r++;
+      });
+    }
+    if (l !== this.hintL) {
+      this.hintL = l;
+      this.els.edgeL.classList.toggle('show', l > 0);
+      if (l > 0) this.els.edgeL.firstElementChild.textContent = `‹ ${l}`;
+    }
+    if (r !== this.hintR) {
+      this.hintR = r;
+      this.els.edgeR.classList.toggle('show', r > 0);
+      if (r > 0) this.els.edgeR.firstElementChild.textContent = `${r} ›`;
     }
   }
 }
