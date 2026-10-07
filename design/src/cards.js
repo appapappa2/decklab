@@ -1,13 +1,45 @@
 import { Spring } from './spring.js';
 
-// U+FE0E forces text (non-emoji) presentation of the suit glyphs on iOS.
 export const SUITS = [
-  { id: 'S', glyph: '\u2660\uFE0E', red: false, order: 0 },
-  { id: 'H', glyph: '\u2665\uFE0E', red: true, order: 1 },
-  { id: 'C', glyph: '\u2663\uFE0E', red: false, order: 2 },
-  { id: 'D', glyph: '\u2666\uFE0E', red: true, order: 3 },
+  { id: 'S', name: 'spades', red: false, order: 0 },
+  { id: 'H', name: 'hearts', red: true, order: 1 },
+  { id: 'C', name: 'clubs', red: false, order: 2 },
+  { id: 'D', name: 'diamonds', red: true, order: 3 },
 ];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+// Rounded, consistent silhouettes instead of platform-dependent suit glyphs.
+// The short highlight paths give the large marks a softly raised edge.
+const SUIT_ART = {
+  S: {
+    shape: 'M50 9C47 9 44 13 40 17L20 37C4 53 12 75 29 75C37 75 43 71 46 67C45 77 41 84 37 89C36 91 38 93 41 93H59C62 93 64 91 63 89C59 84 55 77 54 67C57 71 63 75 71 75C88 75 96 53 80 37L60 17C56 13 53 9 50 9Z',
+    highlight: 'M18 42C22 36 35 24 44 15C47 12 49 10 51 11',
+  },
+  H: {
+    shape: 'M50 25C43 10 20 9 12 26C2 49 24 70 45 88C48 91 52 91 55 88C76 70 98 49 88 26C80 9 57 10 50 25Z',
+    highlight: 'M13 30C18 15 38 14 47 26M55 24C64 14 80 16 86 29',
+  },
+  C: {
+    shape: 'M50 9C34 9 25 24 32 37C17 33 7 43 7 56C7 70 20 80 33 75C40 73 44 68 46 64C45 76 41 84 37 89C36 91 38 93 41 93H59C62 93 64 91 63 89C59 84 55 76 54 64C56 68 60 73 67 75C80 80 93 70 93 56C93 43 83 33 68 37C75 24 66 9 50 9Z',
+    highlight: 'M32 28C32 18 40 11 49 11M9 55C10 44 19 38 29 40M73 39C83 39 89 45 91 52',
+  },
+  D: {
+    shape: 'M45 10C48 6 52 6 55 10L85 44C88 48 88 52 85 56L55 90C52 94 48 94 45 90L15 56C12 52 12 48 15 44Z',
+    highlight: 'M16 46L46 12C48 9 51 9 54 12',
+  },
+};
+
+function suitHTML(id) {
+  const art = SUIT_ART[id];
+  return `<svg class="suit-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false">` +
+    `<path fill="currentColor" d="${art.shape}"/>` +
+    `<path class="suit-highlight" d="${art.highlight}"/>` +
+    `</svg>`;
+}
+
+export function cardBackHTML() {
+  return `<div class="back-emblem">${suitHTML('D')}</div>`;
+}
 
 export function createDeck() {
   const deck = [];
@@ -25,37 +57,14 @@ export function shuffle(arr) {
   return arr;
 }
 
-// Pip positions (% of card width/height) for number cards.
-const L = 31, C = 50, R = 69;
-const PIPS = {
-  2: [[C, 21], [C, 79]],
-  3: [[C, 21], [C, 50], [C, 79]],
-  4: [[L, 21], [R, 21], [L, 79], [R, 79]],
-  5: [[L, 21], [R, 21], [C, 50], [L, 79], [R, 79]],
-  6: [[L, 21], [R, 21], [L, 50], [R, 50], [L, 79], [R, 79]],
-  7: [[L, 21], [R, 21], [C, 35.5], [L, 50], [R, 50], [L, 79], [R, 79]],
-  8: [[L, 21], [R, 21], [C, 35.5], [L, 50], [R, 50], [C, 64.5], [L, 79], [R, 79]],
-  9: [[L, 21], [R, 21], [L, 40.3], [R, 40.3], [C, 50], [L, 59.7], [R, 59.7], [L, 79], [R, 79]],
-  10: [[L, 21], [R, 21], [C, 30.7], [L, 40.3], [R, 40.3], [L, 59.7], [R, 59.7], [C, 69.3], [L, 79], [R, 79]],
-};
-
 function faceHTML(card) {
-  const g = card.suit.glyph;
-  const corner = `<b>${card.rank}</b><i>${g}</i>`;
-  let center;
-  if (card.value === 1) {
-    center = `<div class="center ace">${g}</div>`;
-  } else if (card.value > 10) {
-    center = `<div class="center"><div class="court-frame"><b>${card.rank}</b><i>${g}</i></div></div>`;
-  } else {
-    const pips = PIPS[card.value]
-      .map(([x, y]) => `<span class="pip${y > 50 ? ' flip' : ''}" style="left:${x}%;top:${y}%">${g}</span>`)
-      .join('');
-    center = `<div class="center">${pips}</div>`;
-  }
+  const mark = suitHTML(card.suit.id);
+  const corner = `<b${card.rank === '10' ? ' class="rank-ten"' : ''}>${card.rank}</b>${mark}`;
   return (
-    `<div class="face front${card.suit.red ? ' red' : ''}">` +
-    `<div class="corner tl">${corner}</div>${center}<div class="corner br">${corner}</div>` +
+    `<div class="face front${card.suit.red ? ' red' : ''}" aria-hidden="true">` +
+    `<div class="corner tl">${corner}</div>` +
+    `<div class="center${card.value === 1 ? ' ace' : ''}">${mark}</div>` +
+    `<div class="corner br">${corner}</div>` +
     `</div>`
   );
 }
@@ -69,7 +78,9 @@ export class CardSprite {
     this.card = card;
     const el = document.createElement('div');
     el.className = 'card';
-    el.innerHTML = `<div class="shadow"></div><div class="card-inner">${faceHTML(card)}<div class="face back back-art"></div></div>`;
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', `${card.rank} of ${card.suit.name}`);
+    el.innerHTML = `<div class="shadow"></div><div class="card-inner">${faceHTML(card)}<div class="face back back-art" aria-hidden="true">${cardBackHTML()}</div></div>`;
     this.el = el;
     this.inner = el.querySelector('.card-inner');
     this.shadowEl = el.querySelector('.shadow');
