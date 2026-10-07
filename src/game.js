@@ -1,4 +1,4 @@
-import { CardSprite, createDeck, shuffle } from './cards.js';
+import { CardSprite, createDeck, shuffle } from './cards.js?v=landing-burst';
 import { clamp, computeMetrics, handSlots, nearestSlot } from './layout.js';
 import { Spring } from './spring.js';
 import { VelocityTracker } from './velocity.js';
@@ -25,13 +25,14 @@ export class Game {
     this.hand = []; // CardSprite, left -> right
     this.played = []; // CardSprite, bottom -> top
     this.leaving = []; // sprites flying back to the deck before removal
+    this.pendingLandings = new Set();
+    this.landingEvents = []; // arrivals in the middle; consumed by the sparkle renderer
 
     this.drag = null;
     this.peek = -1;
     this.active = false; // a pointer is on (or hovering) the hand
     this.slots = [];
     this.gap = -1;
-    this.hot = false;
 
     // Hand scrolling (overflow mode)
     this.scroll = new Spring(0, 0.01);
@@ -48,6 +49,8 @@ export class Game {
   // ---------------------------------------------------------------- layout
 
   setSize(W, H, safe) {
+    this.pendingLandings.clear();
+    this.landingEvents.length = 0;
     this.W = W;
     this.H = H;
     this.safe = safe;
@@ -56,21 +59,19 @@ export class Game {
 
   relayout() {
     const m = (this.m = computeMetrics(this.W, this.H, this.safe, this.s));
-    const { screen, deck, playzone, edgeL, edgeR } = this.els;
+    const { screen, deck, edgeL, edgeR } = this.els;
     screen.style.setProperty('--cw', `${m.cw}px`);
     screen.style.setProperty('--ch', `${m.ch}px`);
     screen.dataset.hint = this.s.overflowHint;
     deck.style.left = `${m.deck.x - m.cw / 2}px`;
     deck.style.top = `${m.deck.y - m.ch / 2}px`;
-    playzone.style.left = `${m.pz.x - m.pz.w / 2}px`;
-    playzone.style.top = `${m.pz.y - m.pz.h / 2}px`;
-    playzone.style.width = `${m.pz.w}px`;
-    playzone.style.height = `${m.pz.h}px`;
     const edgeTop = `${m.handTop - m.ch * 0.3}px`;
     edgeL.style.top = edgeTop;
     edgeR.style.top = edgeTop;
     edgeL.style.width = `${m.safe.left + m.cw * 0.7}px`;
     edgeR.style.width = `${m.safe.right + m.cw * 0.7}px`;
+    for (const sp of [...this.hand, ...this.played, ...this.leaving]) sp.setLightSpace(this.W, this.H);
+    this.drag?.sprite.setLightSpace(this.W, this.H);
   }
 
   /** Hand layout at the current scroll position. */
@@ -81,6 +82,8 @@ export class Game {
   // --------------------------------------------------------------- actions
 
   newGame(count = 7) {
+    this.pendingLandings.clear();
+    this.landingEvents.length = 0;
     const now = performance.now();
     const old = [...this.hand, ...this.played];
     if (this.drag) old.push(this.drag.sprite);
@@ -97,10 +100,8 @@ export class Game {
     this.peek = -1;
     this.scroll.set(0);
     this.scrollDrag = false;
-    this.setHot(false);
     this.deck = shuffle(createDeck());
     this.draw(count, old.length ? 320 : 150);
-    this.updatePile();
   }
 
   draw(count = 1, delay = 0) {
@@ -111,6 +112,7 @@ export class Game {
       const card = this.deck.pop();
       if (!card) break;
       const sp = new CardSprite(card, this.els.layer);
+      sp.setLightSpace(this.W, this.H);
       sp.place(m.deck.x, m.deck.y, 0, 1, 1);
       sp.target(m.deck.x, m.deck.y, 0, 1, 1, 0);
       sp.waitUntil = now + delay + k * this.s.dealStagger;
@@ -130,7 +132,7 @@ export class Game {
       rot: (Math.random() - 0.5) * 22,
     };
     this.played.push(sp);
-    this.updatePile();
+    this.armLanding(sp);
   }
 
   /** Play a card straight from the hand (Play button, discard). */
@@ -149,10 +151,10 @@ export class Game {
     const now = performance.now();
     const cards = this.played.splice(0).reverse();
     cards.forEach((sp, k) => {
+      this.pendingLandings.delete(sp);
       sp.waitUntil = now + k * 40;
       this.hand.push(sp);
     });
-    this.updatePile();
   }
 
   discardRandom() {
@@ -192,14 +194,28 @@ export class Game {
     this.els.deck.classList.toggle('empty', n === 0);
   }
 
-  updatePile() {
-    this.els.playzone.classList.toggle('has-cards', this.played.length > 0);
+  armLanding(sp) {
+    if (this.played.includes(sp)) this.pendingLandings.add(sp);
   }
 
-  setHot(on) {
-    if (on === this.hot) return;
-    this.hot = on;
-    this.els.playzone.classList.toggle('hot', on);
+  updateLandings(now) {
+    for (const sp of this.pendingLandings) {
+      if (sp.isDrag || !this.played.includes(sp)) {
+        this.pendingLandings.delete(sp);
+        continue;
+      }
+      if (sp.waitUntil > now) continue;
+      // Fire on arrival, rather than on release while the card is still airborne.
+      const distance = Math.hypot(sp.x.v - sp.x.t, sp.y.v - sp.y.t);
+      const speed = Math.hypot(sp.x.vel, sp.y.vel);
+      if (distance <= Math.max(2.5, this.m.cw * .035) && speed <= 80 &&
+          Math.abs(sp.rot.v - sp.rot.t) <= 1.5 && Math.abs(sp.rot.vel) <= 35 &&
+          Math.abs(sp.scale.v - sp.scale.t) <= .025 &&
+          Math.abs(sp.flip.v) <= .03) {
+        this.landingEvents.push(sp);
+        this.pendingLandings.delete(sp);
+      }
+    }
   }
 
   // ------------------------------------------------------------ hit tests
@@ -325,6 +341,7 @@ export class Game {
     const s = this.s;
     this.endScrollDrag(0);
     this.hand.splice(index, 1);
+    this.pendingLandings.delete(sp);
     sp.isDrag = true;
     sp.waitUntil = 0;
     // Offset from pointer to card center. A finger would cover the card, so
@@ -358,7 +375,7 @@ export class Game {
     this.updateDragZone();
   }
 
-  /** Recompute reorder gap + play-zone highlight for the dragged card. */
+  /** Recompute the reorder gap for the dragged card. */
   updateDragZone() {
     const d = this.drag;
     const m = this.m;
@@ -380,7 +397,6 @@ export class Game {
       if (gap >= 0 && d.gapIndex >= 0) this.haptic(4);
       d.gapIndex = gap;
     }
-    this.setHot(this.wouldPlay(cardX, cardY));
   }
 
   /** Would a card centered at (cx, cy) be played if released now? */
@@ -395,7 +411,6 @@ export class Game {
     const d = this.drag;
     if (!d) return;
     this.drag = null;
-    this.setHot(false);
     const sp = d.sprite;
     sp.isDrag = false;
     const s = this.s;
@@ -445,6 +460,7 @@ export class Game {
     for (const sp of this.hand) this.stepSprite(sp, dt, fast);
     for (const sp of this.leaving) this.stepSprite(sp, dt, false);
     if (this.drag) this.stepSprite(this.drag.sprite, dt, true);
+    this.updateLandings(now);
 
     if (this.leaving.length) {
       this.leaving = this.leaving.filter((sp) => {
