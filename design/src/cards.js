@@ -7,25 +7,23 @@ export const SUITS = [
   { id: 'D', name: 'diamonds', red: true, order: 3 },
 ];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const motionPreference = typeof window !== 'undefined' && window.matchMedia
+  ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+const clamp = (value, limit) => Math.min(limit, Math.max(-limit, value));
 
 // Rounded, consistent silhouettes instead of platform-dependent suit glyphs.
-// The short highlight paths give the large marks a softly raised edge.
 const SUIT_ART = {
   S: {
     shape: 'M50 9C47 9 44 13 40 17L20 37C4 53 12 75 29 75C37 75 43 71 46 67C45 77 41 84 37 89C36 91 38 93 41 93H59C62 93 64 91 63 89C59 84 55 77 54 67C57 71 63 75 71 75C88 75 96 53 80 37L60 17C56 13 53 9 50 9Z',
-    highlight: 'M18 42C22 36 35 24 44 15C47 12 49 10 51 11',
   },
   H: {
     shape: 'M50 25C43 10 20 9 12 26C2 49 24 70 45 88C48 91 52 91 55 88C76 70 98 49 88 26C80 9 57 10 50 25Z',
-    highlight: 'M13 30C18 15 38 14 47 26M55 24C64 14 80 16 86 29',
   },
   C: {
     shape: 'M50 9C34 9 25 24 32 37C17 33 7 43 7 56C7 70 20 80 33 75C40 73 44 68 46 64C45 76 41 84 37 89C36 91 38 93 41 93H59C62 93 64 91 63 89C59 84 55 76 54 64C56 68 60 73 67 75C80 80 93 70 93 56C93 43 83 33 68 37C75 24 66 9 50 9Z',
-    highlight: 'M32 28C32 18 40 11 49 11M9 55C10 44 19 38 29 40M73 39C83 39 89 45 91 52',
   },
   D: {
     shape: 'M45 10C48 6 52 6 55 10L85 44C88 48 88 52 85 56L55 90C52 94 48 94 45 90L15 56C12 52 12 48 15 44Z',
-    highlight: 'M16 46L46 12C48 9 51 9 54 12',
   },
 };
 
@@ -33,12 +31,17 @@ function suitHTML(id) {
   const art = SUIT_ART[id];
   return `<svg class="suit-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false">` +
     `<path fill="currentColor" d="${art.shape}"/>` +
-    `<path class="suit-highlight" d="${art.highlight}"/>` +
     `</svg>`;
 }
 
 export function cardBackHTML() {
-  return `<div class="back-emblem">${suitHTML('D')}</div>`;
+  const positions = { S: [13, 13], H: [63, 13], D: [13, 63], C: [63, 63] };
+  const marks = SUITS.map(suit => {
+    const [x, y] = positions[suit.id];
+    return `<path fill="${suit.red ? '#d95742' : '#000'}" transform="translate(${x} ${y}) scale(.24)" d="${SUIT_ART[suit.id].shape}"/>`;
+  }).join('');
+  const pattern = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${marks}</svg>`);
+  return `<div class="back-pattern" aria-hidden="true" style="background-image:url('data:image/svg+xml,${pattern}')"></div>`;
 }
 
 export function createDeck() {
@@ -60,8 +63,11 @@ export function shuffle(arr) {
 function faceHTML(card) {
   const mark = suitHTML(card.suit.id);
   const corner = `<b${card.rank === '10' ? ' class="rank-ten"' : ''}>${card.rank}</b>${mark}`;
+  const court = card.value >= 11;
+  const foil = court || card.value === 1;
   return (
-    `<div class="face front${card.suit.red ? ' red' : ''}" aria-hidden="true">` +
+    `<div class="face front${card.suit.red ? ' red' : ''}${court ? ' court' : ''}${foil ? ' foil' : ''}" aria-hidden="true">` +
+    (foil ? `<div class="card-foil" aria-hidden="true"></div>` : '') +
     `<div class="corner tl">${corner}</div>` +
     `<div class="center${card.value === 1 ? ' ace' : ''}">${mark}</div>` +
     `<div class="corner br">${corner}</div>` +
@@ -71,11 +77,18 @@ function faceHTML(card) {
 
 /**
  * A card on screen. Position is the card's CENTER in screen-local px.
- * All motion goes through springs; render() writes transforms only when they change.
+ * All motion goes through springs; render() writes transforms and surface-light
+ * variables only when they change. Light-space dimensions are cached by layout.
  */
 export class CardSprite {
   constructor(card, layer) {
     this.card = card;
+    this.isCourt = card.value >= 11;
+    this.isFoil = this.isCourt || card.value === 1;
+    this._lightWidth = 1;
+    this._lightHeight = 1;
+    this._foil = {};
+    this._light = {};
     const el = document.createElement('div');
     el.className = 'card';
     el.setAttribute('role', 'img');
@@ -91,6 +104,9 @@ export class CardSprite {
     this.scale = new Spring(1, 1e-4);
     this.flip = new Spring(0, 1e-4); // 0 = face up, 1 = face down
     this.lift = new Spring(0, 1e-3); // drives the lifted shadow
+    this.tiltX = new Spring(0, .002);
+    this.tiltY = new Spring(0, .002);
+    this.tiltZ = new Spring(0, .002);
 
     this.isDrag = false;
     this.selected = false;
@@ -101,7 +117,7 @@ export class CardSprite {
 
     this.dirty = true;
     this._t = '';
-    this._f = -1;
+    this._innerT = '';
     this._l = -1;
     this._z = -1;
     layer.appendChild(el);
@@ -113,6 +129,9 @@ export class CardSprite {
     this.rot.set(rot);
     this.scale.set(scale);
     this.flip.set(flip);
+    this.tiltX.set(0);
+    this.tiltY.set(0);
+    this.tiltZ.set(0);
     this.dirty = true;
   }
 
@@ -125,6 +144,15 @@ export class CardSprite {
     this.lift.t = lift;
   }
 
+  setLightSpace(width, height) {
+    const w = Number.isFinite(width) && width > 0 ? width : 1;
+    const h = Number.isFinite(height) && height > 0 ? height : 1;
+    if (w === this._lightWidth && h === this._lightHeight) return;
+    this._lightWidth = w;
+    this._lightHeight = h;
+    if (this.isFoil) this.dirty = true;
+  }
+
   step(dt, k, zeta) {
     let moved = this.x.step(dt, k, zeta);
     moved = this.y.step(dt, k, zeta) || moved;
@@ -132,6 +160,23 @@ export class CardSprite {
     moved = this.scale.step(dt, k, zeta) || moved;
     moved = this.flip.step(dt, k, zeta) || moved;
     moved = this.lift.step(dt, k, zeta) || moved;
+    if (motionPreference?.matches) {
+      for (const tilt of [this.tiltX, this.tiltY, this.tiltZ]) {
+        if (tilt.v || tilt.vel || tilt.t) moved = true;
+        tilt.set(0);
+      }
+    } else {
+      // Inertia stays relative to the face, even while the hand is fanned.
+      const angle = this.rot.v * Math.PI / 180;
+      const vx = this.x.vel * Math.cos(angle) + this.y.vel * Math.sin(angle);
+      const vy = this.y.vel * Math.cos(angle) - this.x.vel * Math.sin(angle);
+      this.tiltX.t = Math.tanh(vy / 420) * 3.5;
+      this.tiltY.t = vx === 0 ? 0 : -Math.tanh(vx / 420) * 3.5;
+      this.tiltZ.t = clamp(Math.tanh(this.rot.vel / 140) * .88 + Math.tanh(vx / 700) * .22, 1.1);
+      moved = this.tiltX.step(dt, 160, .95) || moved;
+      moved = this.tiltY.step(dt, 160, .95) || moved;
+      moved = this.tiltZ.step(dt, 160, .95) || moved;
+    }
     if (moved) this.dirty = true;
   }
 
@@ -151,14 +196,49 @@ export class CardSprite {
       this._t = t;
     }
     const f = Math.round(this.flip.v * 1000) / 1000;
-    if (f !== this._f) {
-      this.inner.style.transform = f === 0 ? '' : `rotateY(${(f * 180).toFixed(1)}deg)`;
-      this._f = f;
+    const tx = Math.round(this.tiltX.v * 1000) / 1000;
+    const ty = Math.round(this.tiltY.v * 1000) / 1000;
+    const tz = Math.round(this.tiltZ.v * 1000) / 1000;
+    const innerT = tx || ty || tz || f
+      ? `rotateX(${tx.toFixed(3)}deg) rotateY(${ty.toFixed(3)}deg) rotateZ(${tz.toFixed(3)}deg) rotateY(${(f * 180).toFixed(1)}deg)`
+      : '';
+    if (innerT !== this._innerT) {
+      this.inner.style.transform = innerT;
+      this._innerT = innerT;
     }
     const l = Math.round(Math.min(1, Math.max(0, this.lift.v)) * 100) / 100;
     if (l !== this._l) {
       this.shadowEl.style.opacity = String(l);
       this._l = l;
+    }
+    const tiltAmount = Math.min(1, Math.hypot(tx, ty, tz * 3) / 3.5);
+    const light = {
+      '--card-light-angle': `${(135 + ty * 13 - tx * 9 + tz * 12).toFixed(2)}deg`,
+      '--card-light-highlight': (tiltAmount * .09).toFixed(3),
+      '--card-light-shade': (tiltAmount * .09).toFixed(3),
+    };
+    for (const [name, value] of Object.entries(light)) {
+      if (value === this._light[name]) continue;
+      this.el.style.setProperty(name, value);
+      this._light[name] = value;
+    }
+    if (this.isFoil) {
+      // Keep the shine centered on the card; its angle, tint and intensity
+      // respond to dragging, fanning, lifting and flips through spring values.
+      const nx = Math.min(1, Math.max(0, this.x.v / this._lightWidth)) - 0.5;
+      const ny = Math.min(1, Math.max(0, this.y.v / this._lightHeight)) - 0.5;
+      const turn = Math.sin(this.flip.v * Math.PI);
+      const scale = this.scale.v - 1;
+      const values = {
+        '--foil-angle': `${(this.rot.v * 0.8 + turn * 32 + nx * 35 - ny * 20 + l * 18 + ty * 8 - tx * 6 + tz * 8).toFixed(2)}deg`,
+        '--foil-hue': `${(nx * 12 - ny * 8 + turn * 6 + this.rot.v * 0.08 + ty * 2 - tx + tz * .5).toFixed(2)}deg`,
+        '--foil-strength': Math.min(.95, Math.max(.76, .82 + nx * .04 - ny * .03 + l * .035 + scale * .04 + turn * .025 + tiltAmount * .065)).toFixed(3),
+      };
+      for (const [name, value] of Object.entries(values)) {
+        if (value === this._foil[name]) continue;
+        this.el.style.setProperty(name, value);
+        this._foil[name] = value;
+      }
     }
   }
 

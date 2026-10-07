@@ -1,9 +1,11 @@
 import { initDevice } from './device.js';
 import { buildPanel, loadSettings, saveSettings } from './settings.js';
-import { Game } from './game.js';
+import { Game } from './game.js?v=middle-only-landings';
 import { Input } from './input.js';
 import { DebugOverlay } from './debug.js';
-import { cardBackHTML } from './cards.js';
+import { cardBackHTML } from './cards.js?v=landing-burst';
+import { SparkleTrail } from './sparkles.js?v=landing-burst';
+import { LandingRipples } from './ripples.js?v=water-ripple';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -28,7 +30,6 @@ const game = new Game(
     ui: $('ui'),
     deck: $('deck'),
     deckCount: $('deck-count'),
-    playzone: $('playzone'),
     edgeL: $('edge-left'),
     edgeR: $('edge-right'),
   },
@@ -36,12 +37,16 @@ const game = new Game(
   haptic,
 );
 const debug = new DebugOverlay($('debug'));
+const sparkles = new SparkleTrail($('sparkles'));
+const ripples = new LandingRipples($('ripples'));
 
 let input = null;
 const device = initDevice({
   onResize(W, H, safe) {
     game.setSize(W, H, safe);
     debug.resize(W, H);
+    sparkles.resize(W, H);
+    ripples.resize(W, H);
   },
   onRotateStart() {
     input?.cancel();
@@ -109,7 +114,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Handy for poking at state from the devtools console.
-window.lab = { game, input, settings, device };
+window.lab = { game, input, settings, device, sparkles, ripples };
 
 // Boot
 device.measure();
@@ -121,7 +126,10 @@ let last = performance.now();
 function frame(now) {
   const raw = Math.max(0, (now - last) / 1000);
   last = now;
-  game.update(now, Math.min(raw, 0.05));
+  const dt = Math.min(raw, 0.05);
+  game.update(now, dt);
+  ripples.update(dt, game);
+  sparkles.update(dt, game);
   debug.frame(raw, game, input);
   requestAnimationFrame(frame);
 }

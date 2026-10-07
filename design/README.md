@@ -51,20 +51,22 @@ src/device.js   desktop frame (scale-to-fit, rotation, emulated safe areas) vs p
 src/game.js     deck/hand/pile state → per-frame spring targets; play/draw/sort/return
 src/input.js    pointer gesture state machine (press → scrub → drag / tap / long-press)
 src/layout.js   pure layout math: metrics, fan/line/stack slots, nearest-slot picking
-src/cards.js    deck data + CardSprite (DOM + springs, transform-only rendering)
+src/cards.js    deck data + CardSprite (DOM + springs, subtle depth tilt and pose-driven lighting/foil)
+src/sparkles.js canvas sparkle trails for moving aces and court cards, plus landing bursts
+src/ripples.js  soft gray water-like landing ripples beneath aces and court cards
 src/spring.js   damped spring with fixed 1/240 s sub-steps (stable at 60/120 Hz)
 src/velocity.js windowed pointer velocity (drives tilt + flick)
 src/settings.js schema, defaults, presets, localStorage, auto-generated panel
 src/debug.js    overlay: play line, hand zone, slots, pick points, finger, FPS
 ```
 
-The game code only sees `(width, height, safeArea)`, so the emulated frame and a real phone run the same path. All card motion is spring-driven. Each frame sets targets from state, steps the springs, and writes `transform` only when the value changed. Nothing reads layout inside the loop.
+The game code only sees `(width, height, safeArea)`, so the emulated frame and a real phone run the same path. All card motion is spring-driven. Each frame sets targets from state, steps the springs, and updates transforms and lighting variables only when they change. Cards lean gently with movement, changing the paper lighting; aces and court cards have a centered foil finish and leave a brief sparkle trail. Cards emit a short outward sparkle burst when they land in the middle played pile; aces and court cards also send out a soft gray ripple that disperses into the table. Depth tilt, particles and ripples respect reduced motion. Nothing reads layout inside the loop.
 
 ## Lab settings
 
 All settings persist to `localStorage`. Double-click a label to reset that setting, or use **Reset to defaults**. Presets: *Balatro-ish*, *Hearthstone-ish*, *Flat & snappy*, *Tight stack*, *Scrolling hand*.
 
-**Import / export:** the panel has a textbox. **Export** (or **Copy**) dumps the current settings as JSON; paste JSON and press **Import** to apply it. Partial JSON is fine, for example `{"overflow": "scroll", "minSpacing": 0.5}`. Unknown keys and invalid values are skipped and reported, and numbers are clamped to the slider range. `window.lab` exposes `{ game, input, settings, device }` in the devtools console for poking around.
+**Import / export:** the panel has a textbox. **Export** (or **Copy**) dumps the current settings as JSON; paste JSON and press **Import** to apply it. Partial JSON is fine, for example `{"overflow": "scroll", "minSpacing": 0.5}`. Unknown keys and invalid values are skipped and reported, and numbers are clamped to the slider range. `window.lab` exposes `{ game, input, settings, device, sparkles, ripples }` in the devtools console for poking around.
 
 Units: **cw** = card widths, **ch** = card heights.
 

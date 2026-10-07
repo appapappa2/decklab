@@ -20,15 +20,16 @@
           <div id="device">
             <div id="screen">
               <div id="table">
-                <div id="playzone"><span>Drag here to play</span></div>
                 <div id="deck">
                   <div class="deck-stack back-art"></div>
                   <span id="deck-count">52</span>
                 </div>
               </div>
+              <canvas id="ripples" aria-hidden="true"></canvas>
               <div id="cards"></div>
               <div class="edge left" id="edge-left"><span class="count"></span></div>
               <div class="edge right" id="edge-right"><span class="count"></span></div>
+              <canvas id="sparkles" aria-hidden="true"></canvas>
               <div id="ui"></div>
               <canvas id="debug"></canvas>
               <button id="gear" aria-label="Lab settings">
@@ -73,6 +74,6 @@
     </aside>
   </div>
   <div id="safe-probe"></div>
-  <script type="module" src="src/main.js"></script>
+  <script type="module" src="src/main.js?v=water-ripple"></script>
 </body>
 </html>

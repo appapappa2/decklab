@@ -7,9 +7,9 @@
   --muted: #8b939e;
   --accent: #5fd4a0;
   --sel: #ffd257;
-  --card-paper: #fff;
-  --card-ink: #383837;
-  --card-red: #cb5b5d;
+  --card-paper: #faf7ef;
+  --card-ink: #000;
+  --card-red: #d95742;
   --ease: cubic-bezier(.45, .05, .25, 1);
   color-scheme: dark;
 }
@@ -92,10 +92,17 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
   user-select: none;
   -webkit-touch-callout: none;
   background:
-    radial-gradient(120% 80% at 50% 38%, rgba(255, 255, 255, .08), transparent 60%),
-    radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(0, 0, 0, .45) 100%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, .012) 0 2px, rgba(0, 0, 0, .012) 2px 4px),
-    #17643f;
+    radial-gradient(ellipse 75% 65% at 50% 46%, rgba(232, 221, 202, .12) 0%, rgba(232, 221, 202, .035) 45%, transparent 80%),
+    #1b1c1f;
+}
+#screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='white' filter='url(%23grain)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
 }
 #screen * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
@@ -177,27 +184,6 @@ kbd {
 
 #table { position: absolute; inset: 0; z-index: 0; }
 
-#playzone {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  border: 2px dashed rgba(255, 255, 255, .22);
-  border-radius: 14px;
-  transition: border-color .15s, background-color .15s, transform .25s cubic-bezier(.3, 1.6, .5, 1);
-}
-#playzone span {
-  padding: 0 10px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, .35);
-  transition: opacity .2s;
-}
-#playzone.has-cards span { opacity: 0; }
-#playzone.hot { border-color: rgba(255, 255, 255, .8); background-color: rgba(255, 255, 255, .08); transform: scale(1.04); }
-
 #deck { position: absolute; width: var(--cw); height: var(--ch); }
 #deck .deck-stack {
   position: absolute;
@@ -205,16 +191,15 @@ kbd {
   overflow: hidden;
   border-radius: var(--card-radius);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .18),
-    0 1px 0 #dddcd8,
-    0 3px 0 #a5a5a0,
-    0 5px 0 #dddcd8,
-    0 7px 0 #9b9b96,
+    0 1px 0 #e3ded2,
+    0 3px 0 #aaa395,
+    0 5px 0 #e3ded2,
+    0 7px 0 #9e9789,
     0 10px 18px rgba(0, 0, 0, .28);
 }
 #deck.empty .deck-stack { background: none; box-shadow: none; border: 2px dashed rgba(255, 255, 255, .2); }
 #deck.empty .deck-stack::before,
-#deck.empty .back-emblem { display: none; }
+#deck.empty .back-pattern { display: none; }
 #deck-count {
   position: absolute;
   left: 50%;
@@ -228,30 +213,21 @@ kbd {
 }
 
 .back-art {
-  background: var(--card-ink);
+  background: #fff;
 }
-.back-art::before {
-  content: '';
-  position: absolute;
-  inset: 7%;
-  border: 1px solid rgba(255, 255, 255, .2);
-  border-radius: calc(var(--cw) * .095);
-}
-.back-emblem {
+.back-pattern {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--card-red);
-}
-.back-emblem .suit-mark {
-  width: 42%;
-  filter: drop-shadow(0 calc(var(--cw) * .018) calc(var(--cw) * .01) rgba(0, 0, 0, .22));
+  border-radius: inherit;
+  background-size: calc(var(--cw) * .8) calc(var(--cw) * .8);
+  background-position: center;
 }
 
 /* ------------------------------------------------------------------ cards */
 
-#cards { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+#ripples { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+#cards { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+#sparkles { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
 
 .card {
   position: absolute;
@@ -284,25 +260,55 @@ kbd {
   background: var(--card-paper);
   color: var(--card-ink);
   box-shadow:
-    inset 0 -2px 0 #e7e5e2,
     0 1px 3px rgba(0, 0, 0, .16),
     0 3px 7px rgba(0, 0, 0, .12);
 }
 .front.red { color: var(--card-red); }
 .back {
   transform: rotateY(180deg);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .18),
-    inset 0 -2px 0 rgba(0, 0, 0, .12),
-    0 2px 5px rgba(0, 0, 0, .2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .2);
 }
 .card.selected .front {
   box-shadow:
     0 0 0 calc(var(--cw) * .03) var(--sel),
     0 0 calc(var(--cw) * .12) rgba(255, 210, 87, .28),
-    inset 0 -2px 0 #e7e5e2,
     0 3px 7px rgba(0, 0, 0, .12);
 }
+
+/* Moving paper catches light without changing the solid suit artwork. */
+.front,
+.back {
+  background-image: linear-gradient(var(--card-light-angle, 135deg),
+    rgba(255, 255, 255, var(--card-light-highlight, 0)),
+    transparent 48%,
+    rgba(0, 0, 0, var(--card-light-shade, 0)));
+}
+
+/* A quiet pearlescent finish catches the light as foil cards move. */
+.card-foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, .45), transparent 55%),
+    linear-gradient(calc(110deg + var(--foil-angle, 0deg)), transparent 24%, rgba(133, 210, 225, .52) 38%, rgba(182, 184, 239, .5) 46%, rgba(226, 176, 215, .48) 52%, rgba(236, 212, 148, .46) 59%, transparent 72%);
+  background-size: 100% 100%, 220% 220%;
+  background-position: center;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .08), #000 30%, #000 70%, rgba(0, 0, 0, .08));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .08), #000 30%, #000 70%, rgba(0, 0, 0, .08));
+  filter: hue-rotate(var(--foil-hue, 0deg));
+  opacity: var(--foil-strength, .82);
+}
+.card-foil::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(calc(65deg + var(--foil-angle, 0deg)), transparent 40%, rgba(255, 255, 255, .16) 46%, rgba(255, 255, 255, .6) 50%, rgba(204, 193, 233, .25) 54%, transparent 60%);
+  background-size: 220% 220%;
+  background-position: center;
+}
+.front.foil .corner,
+.front.foil .center { z-index: 1; }
 
 .corner {
   position: absolute;
@@ -321,22 +327,9 @@ kbd {
 }
 .corner b.rank-ten { font-size: calc(var(--cw) * .205); }
 .suit-mark { display: block; flex: none; height: auto; overflow: visible; }
-.suit-highlight {
-  fill: none;
-  stroke: #fff;
-  stroke-opacity: .3;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 .corner .suit-mark { width: 68%; }
-.corner .suit-highlight { display: none; }
 .center { position: absolute; inset: 0; display: grid; place-items: center; }
-.center .suit-mark {
-  width: 57%;
-  filter: drop-shadow(0 calc(var(--cw) * .022) calc(var(--cw) * .01) rgba(56, 56, 55, .2));
-}
-.front.red .center .suit-mark { filter: drop-shadow(0 calc(var(--cw) * .022) calc(var(--cw) * .01) rgba(161, 61, 63, .22)); }
+.center .suit-mark { width: 57%; }
 .center.ace .suit-mark { width: 65%; }
 
 /* ------------------------------------------------- play buttons & overflow */
@@ -391,8 +384,8 @@ kbd {
 }
 #screen[data-hint="fade"] .edge::before,
 #screen[data-hint="both"] .edge::before { display: block; }
-.edge.left::before { background: linear-gradient(to right, rgba(4, 28, 16, .85), rgba(4, 28, 16, 0)); }
-.edge.right::before { background: linear-gradient(to left, rgba(4, 28, 16, .85), rgba(4, 28, 16, 0)); }
+.edge.left::before { background: linear-gradient(to right, rgba(0, 0, 0, .85), rgba(0, 0, 0, 0)); }
+.edge.right::before { background: linear-gradient(to left, rgba(0, 0, 0, .85), rgba(0, 0, 0, 0)); }
 .edge .count {
   display: none;
   position: absolute;
