@@ -35,10 +35,11 @@ jobs:
           path: source
           persist-credentials: false
 
-      - name: Check out gh-pages
+      # Any ref works here; the script below switches to gh-pages
+      # (creating it if it doesn't exist yet).
+      - name: Prepare gh-pages workspace
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
           path: site
 
       - name: Update gh-pages
@@ -71,8 +72,15 @@ jobs:
           }
 
           for attempt in 1 2 3 4 5; do
-            git fetch --depth 1 origin gh-pages
-            git reset --hard FETCH_HEAD
+            git checkout --quiet --force --detach
+            git branch -D gh-pages >/dev/null 2>&1 || true
+            if git fetch --depth 1 origin gh-pages; then
+              git checkout --quiet --force -b gh-pages FETCH_HEAD
+            else
+              echo "gh-pages does not exist yet, creating it."
+              git switch --quiet --orphan gh-pages
+            fi
+            git clean -fdxq
 
             if [ "$EVENT" = "delete" ]; then
               [ -d "$DIR" ] && git rm -r --quiet "$DIR"
