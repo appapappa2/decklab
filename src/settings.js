@@ -27,6 +27,17 @@ export const SCHEMA = [
   // Select
   { group: 'Select', key: 'selectLift', label: 'Selected lift', min: 0, max: 0.6, step: 0.01, def: 0.22, unit: ' ch' },
   { group: 'Select', key: 'multiSelect', label: 'Multi-select', type: 'bool', def: true },
+  { group: 'Select', key: 'playButton', label: 'Play button on selected', type: 'bool', def: true, hint: 'Shows a Play button above selected cards. Same result as the play gesture.' },
+
+  // Overflow
+  { group: 'Screen overflow', key: 'overflow', label: 'When the hand is too wide', type: 'select', options: [['compress', 'Compress'], ['scroll', 'Overflow + scroll']], def: 'compress', hint: 'Compress squeezes cards to fit. Overflow keeps a minimum spacing and lets the hand run off-screen.' },
+  { group: 'Screen overflow', key: 'minSpacing', label: 'Min spacing before overflow', min: 0.15, max: 1, step: 0.01, def: 0.45, unit: ' cw' },
+  { group: 'Screen overflow', key: 'scrollMode', label: 'Scroll gesture', type: 'select', options: [['drag', 'Swipe'], ['edge', 'Edge'], ['proportional', 'Proportional']], def: 'drag', hint: 'Swipe: the hand follows your finger. Edge: scrub to a screen edge to auto-scroll. Proportional: the finger position maps across the whole hand. The mouse wheel always scrolls.' },
+  { group: 'Screen overflow', key: 'overflowArc', label: 'Fan arc anchored to', type: 'select', options: [['screen', 'Screen'], ['hand', 'Hand']], def: 'screen', hint: 'Screen: cards roll along a fixed arc like a wheel. Hand: the whole fan slides sideways.' },
+  { group: 'Screen overflow', key: 'overflowHint', label: 'Hidden cards hint', type: 'select', options: [['none', 'None'], ['fade', 'Fade'], ['count', 'Count'], ['both', 'Both']], def: 'both' },
+  { group: 'Screen overflow', key: 'edgeZone', label: 'Edge zone', min: 0.05, max: 0.35, step: 0.01, def: 0.15, fmt: pct, hint: 'Edge mode, and reordering: how close to the edge auto-scroll starts.' },
+  { group: 'Screen overflow', key: 'edgeSpeed', label: 'Edge scroll speed', min: 100, max: 2000, step: 50, def: 700, unit: ' px/s' },
+  { group: 'Screen overflow', key: 'scrollMomentum', label: 'Swipe momentum', min: 0, max: 0.6, step: 0.01, def: 0.2, unit: ' s', hint: 'How far a fling carries the hand (seconds of release velocity).' },
 
   // Drag
   { group: 'Drag', key: 'dragThreshold', label: 'Pull-out threshold', min: 4, max: 60, step: 1, def: 12, unit: ' px' },
@@ -78,19 +89,55 @@ export const PRESETS = {
   'Tight stack': {
     layout: 'stack', stackSpacing: 0.1, maxSpacing: 0.62, handDrop: 0.3, peekScale: 1.3, spread: 0.35,
   },
+  'Scrolling hand': {
+    overflow: 'scroll', minSpacing: 0.5, scrollMode: 'drag', overflowArc: 'screen', overflowHint: 'both',
+    fanRadius: 5, handDrop: 0.2,
+  },
 };
+
+const FIELDS = Object.fromEntries(SCHEMA.map((f) => [f.key, f]));
+
+/**
+ * Copies valid values from `data` (object or JSON string) into `settings`.
+ * Unknown keys, wrong types and invalid options are skipped; numbers are
+ * clamped to their slider range. Partial objects are fine.
+ */
+export function importSettings(settings, data) {
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      return { error: `Not valid JSON: ${e.message}` };
+    }
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return { error: 'Expected a JSON object like {"layout": "fan", ...}' };
+  let applied = 0;
+  const skipped = [];
+  for (const [k, v] of Object.entries(data)) {
+    const f = FIELDS[k];
+    let ok = false;
+    if (!f) ok = false;
+    else if (f.type === 'bool') ok = typeof v === 'boolean';
+    else if (f.type === 'select') ok = f.options.some(([o]) => o === v);
+    else ok = typeof v === 'number' && Number.isFinite(v);
+    if (!ok) {
+      skipped.push(k);
+      continue;
+    }
+    settings[k] = f.type === 'range' || !f.type ? Math.min(f.max, Math.max(f.min, v)) : v;
+    applied++;
+  }
+  return { applied, skipped };
+}
 
 const KEY = 'thedeck-lab:settings:v1';
 
 export function loadSettings() {
   const s = { ...DEFAULTS };
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    for (const k of Object.keys(saved)) {
-      if (k in DEFAULTS && typeof saved[k] === typeof DEFAULTS[k]) s[k] = saved[k];
-    }
+    importSettings(s, localStorage.getItem(KEY) || '{}');
   } catch {
-    /* corrupted or unavailable storage */
+    /* storage unavailable */
   }
   return s;
 }
@@ -175,6 +222,58 @@ export function buildPanel(root, settings, { actions, onChange }) {
   });
   pwrap.append(reset);
   pre.append(pwrap);
+
+  // Import / export
+  const io = section('Import / export', false);
+  const ta = h('textarea', 'io-text');
+  ta.rows = 7;
+  ta.spellcheck = false;
+  ta.autocomplete = 'off';
+  ta.placeholder = 'Press Export to get the current settings as JSON, or paste settings here and press Import.';
+  const status = h('div', 'io-status');
+  const say = (msg, kind = '') => {
+    status.textContent = msg;
+    status.className = `io-status ${kind}`;
+  };
+  const exportText = () => {
+    ta.value = JSON.stringify(settings, null, 2);
+    ta.focus();
+    ta.setSelectionRange(0, ta.value.length);
+  };
+  const iobtns = h('div', 'btns');
+  const mk = (label, fn) => {
+    const b = h('button', 'pill', label);
+    b.type = 'button';
+    b.addEventListener('click', fn);
+    iobtns.append(b);
+  };
+  mk('Export', () => {
+    exportText();
+    say('Current settings exported. Select all and copy.');
+  });
+  mk('Copy', async () => {
+    exportText();
+    try {
+      await navigator.clipboard.writeText(ta.value);
+      say('Copied to clipboard.', 'ok');
+    } catch {
+      // Clipboard API needs a secure context (fails over plain-HTTP LAN).
+      const ok = document.execCommand && document.execCommand('copy');
+      say(ok ? 'Copied to clipboard.' : 'Select the text and copy it manually.', ok ? 'ok' : '');
+    }
+  });
+  mk('Import', () => {
+    const res = importSettings(settings, ta.value);
+    if (res.error) {
+      say(res.error, 'err');
+      return;
+    }
+    refresh();
+    onChange('*');
+    const skipped = res.skipped.length ? ` Skipped: ${res.skipped.join(', ')}.` : '';
+    say(`Imported ${res.applied} setting${res.applied === 1 ? '' : 's'}.${skipped}`, res.applied ? 'ok' : 'err');
+  });
+  io.append(ta, iobtns, status);
 
   // Fields
   let group = null;

@@ -38,34 +38,49 @@ export function computeMetrics(W, H, safe, s) {
  * Rest positions for n cards in the hand.
  * `px` is the "pick" x used for scrubbing: shifted toward each card's visible
  * strip (cards overlap left-to-right) depending on `scrubBias`.
+ *
+ * Overflow: in 'compress' mode spacing shrinks until the hand fits. In 'scroll'
+ * mode it never goes below `minSpacing`, so the hand can be wider than the
+ * screen; `half` is then the max scroll distance each way, and `scroll`
+ * shifts the hand (positive = hand moves left).
  */
-export function handSlots(n, m, s, spread) {
+export function handSlots(n, m, s, spread, scroll = 0) {
   const slots = [];
-  if (n <= 0) return { slots, spacing: 0 };
+  if (n <= 0) return { slots, spacing: 0, half: 0 };
   const { cw, ch } = m;
   const tight = s.layout === 'stack' && !spread;
   const maxSp = (tight ? s.stackSpacing : s.maxSpacing) * cw;
-  const fit = n > 1 ? (m.handAvail - cw) / (n - 1) : maxSp;
-  const spacing = n > 1 ? Math.max(1, Math.min(maxSp, fit)) : 0;
+  let spacing = 0;
+  if (n > 1) {
+    spacing = Math.min(maxSp, (m.handAvail - cw) / (n - 1));
+    if (s.overflow === 'scroll' && !tight) spacing = Math.max(spacing, Math.min(maxSp, s.minSpacing * cw));
+    spacing = Math.max(1, spacing);
+  }
+  const over = (n - 1) * spacing + cw - m.handAvail;
+  const half = !tight && over > 0.5 ? over / 2 : 0;
+  const offset = tight ? 0 : scroll;
   const curved = s.layout !== 'line';
   const R = Math.max(s.fanRadius * ch, 1);
   const mid = (n - 1) / 2;
   const pickShift = (s.scrubBias * Math.max(0, cw - spacing)) / 2;
+  const arcOnScreen = s.overflowArc === 'screen';
 
   for (let i = 0; i < n; i++) {
     const dx = (i - mid) * spacing;
+    const x = m.handCenterX + dx - offset;
     let y = m.handBaseY;
     let rot = 0;
     if (curved) {
       // Cards sit on a circle of radius R; rotation follows the tangent.
-      const d = clamp(dx, -R * 0.9, R * 0.9);
+      // Anchored to the screen, scrolling cards roll along the arc like a
+      // wheel; anchored to the hand, the whole fan slides sideways.
+      const d = clamp(arcOnScreen ? x - m.handCenterX : dx, -R * 0.9, R * 0.9);
       y += R - Math.sqrt(R * R - d * d);
       rot = ((Math.asin(d / R) * 180) / Math.PI) * s.fanTilt;
     }
-    const x = m.handCenterX + dx;
     slots.push({ x, y, rot, px: i < n - 1 ? x - pickShift : x });
   }
-  return { slots, spacing };
+  return { slots, spacing, half };
 }
 
 /** Index of the slot nearest to x, with hysteresis around the current one. */

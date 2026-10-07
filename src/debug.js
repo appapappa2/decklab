@@ -112,7 +112,8 @@ export class DebugOverlay {
     }
 
     // Stats
-    const text = `${this.fps.toFixed(0)} fps · worst ${this.worst.toFixed(1)} ms · ${game.hand.length} in hand · ${input.state}`;
+    const scroll = game.half > 0 ? ` · scroll ${game.scroll.v.toFixed(0)}/±${game.half.toFixed(0)}` : '';
+    const text = `${this.fps.toFixed(0)} fps · worst ${this.worst.toFixed(1)} ms · ${game.hand.length} in hand · ${input.state}${scroll}`;
     ctx.textAlign = 'left';
     const tx = m.safe.left + 10;
     const ty = m.safe.top + 10;

@@ -20,7 +20,16 @@ function haptic(pattern) {
 
 const screenEl = $('screen');
 const game = new Game(
-  { screen: screenEl, layer: $('cards'), deck: $('deck'), deckCount: $('deck-count'), playzone: $('playzone') },
+  {
+    screen: screenEl,
+    layer: $('cards'),
+    ui: $('ui'),
+    deck: $('deck'),
+    deckCount: $('deck-count'),
+    playzone: $('playzone'),
+    edgeL: $('edge-left'),
+    edgeR: $('edge-right'),
+  },
   settings,
   haptic,
 );
@@ -79,6 +88,7 @@ $('panel-close').addEventListener('click', () => document.body.classList.remove(
 
 window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target instanceof Element && e.target.closest('textarea, input:not([type=range]):not([type=checkbox])')) return;
   switch (e.key.toLowerCase()) {
     case 'r':
       device.rotate();
@@ -95,6 +105,9 @@ window.addEventListener('keydown', (e) => {
     default:
   }
 });
+
+// Handy for poking at state from the devtools console.
+window.lab = { game, input, settings, device };
 
 // Boot
 device.measure();

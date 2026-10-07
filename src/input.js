@@ -1,3 +1,5 @@
+import { VelocityTracker } from './velocity.js';
+
 /**
  * Pointer gesture state machine for the hand. Works for touch, mouse and pen.
  *
@@ -7,11 +9,18 @@
  *     press --up--> tap (toggle select)
  *     drag --up--> play / snap back / reorder
  *
+ * When the hand overflows the screen (overflow = scroll), horizontal motion in
+ * the scrub state either scrolls the hand 1:1 (swipe), auto-scrolls near the
+ * edges (edge), or maps the finger across the whole hand (proportional).
+ * The mouse wheel / trackpad scrolls the hand in every mode.
+ *
  * Mouse/pen extras: hovering over the hand peeks (no button needed), the
  * cursor reflects what's under it, and a dragged card stays where it was grabbed.
  *
  * Only one pointer is tracked at a time. Coordinates are converted to
  * screen-local px (accounting for the scaled desktop phone frame).
+ * The game's `peek` index is the single source of truth for "the card under
+ * the pointer".
  */
 export class Input {
   constructor(el, game, device, settings) {
@@ -22,8 +31,7 @@ export class Input {
     this.pid = null;
     this.pointerType = 'touch';
     this.state = 'idle';
-    this.idx = -1;
-    this.hoverIdx = -1;
+    this.hovering = false;
     this.cursor = '';
     this.lpTimer = 0;
     this.rect = null;
@@ -31,6 +39,8 @@ export class Input {
     this.start = null;
     this.anchor = null;
     this.last = null;
+    this.scrollStart = 0;
+    this.tracker = new VelocityTracker();
 
     el.addEventListener('pointerdown', (e) => this.down(e));
     el.addEventListener('pointermove', (e) => this.move(e));
@@ -42,6 +52,7 @@ export class Input {
     el.addEventListener('lostpointercapture', (e) => {
       if (e.pointerId === this.pid) this.up(e, true);
     });
+    el.addEventListener('wheel', (e) => this.wheel(e), { passive: false });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('dragstart', (e) => e.preventDefault());
     // Stops iOS from starting text selection / magnifier / double-tap zoom.
@@ -72,26 +83,48 @@ export class Input {
     this.el.style.cursor = c;
   }
 
+  /** How horizontal motion behaves right now: 'scrub' or a scroll mode. */
+  scrollMode() {
+    return this.s.overflow === 'scroll' && this.game.canScroll() ? this.s.scrollMode : 'scrub';
+  }
+
+  // ----------------------------------------------------------------- wheel
+
+  wheel(e) {
+    const g = this.game;
+    if (!g.canScroll()) return;
+    e.preventDefault();
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 300 : 1;
+    g.scrollBy((d * unit) / (this.device.scale || 1));
+  }
+
   // ----------------------------------------------------------------- hover
 
   hover(e) {
     if (e.pointerType === 'touch' || this.device.rotating) return;
+    // Over a Play button (or the gear): freeze the hover state so the button
+    // doesn't move away from the cursor.
+    if (e.target instanceof Element && e.target.closest('button')) return;
     this.measure();
     const p = this.local(e);
     const g = this.game;
-    const idx = g.handIndexAt(p, this.hoverIdx);
-    const peekIdx = this.s.hoverPeek ? idx : -1;
-    if (peekIdx !== this.hoverIdx) {
-      this.hoverIdx = peekIdx;
-      g.setPeek(peekIdx);
-      g.setActive(peekIdx >= 0);
+    const idx = g.handIndexAt(p, this.hovering ? g.peek : -1);
+    if (this.s.hoverPeek && idx >= 0) {
+      this.hovering = true;
+      g.hoverX = p.x;
+      g.setPeek(idx);
+      g.setActive(true);
+    } else if (this.hovering) {
+      this.clearHover();
     }
     this.setCursor(idx >= 0 ? 'grab' : g.hitDeck(p) || g.hitPile(p) ? 'pointer' : '');
   }
 
   clearHover() {
-    if (this.hoverIdx >= 0) {
-      this.hoverIdx = -1;
+    if (this.hovering) {
+      this.hovering = false;
+      this.game.hoverX = null;
       this.game.setPeek(-1);
       this.game.setActive(false);
     }
@@ -111,7 +144,9 @@ export class Input {
     const g = this.game;
 
     // While hovering, hit-test against what the user sees (the peeked card).
-    const idx = g.handIndexAt(p, this.hoverIdx);
+    const idx = g.handIndexAt(p, this.hovering ? g.peek : -1);
+    this.hovering = false;
+    g.hoverX = null;
     if (idx >= 0) {
       this.pid = e.pointerId;
       this.pointerType = e.pointerType || 'touch';
@@ -121,18 +156,25 @@ export class Input {
         /* pointer already gone */
       }
       this.state = 'press';
-      this.idx = idx;
       this.start = p;
       this.anchor = p;
       this.last = p;
+      this.scrollStart = g.scroll.v;
+      this.tracker = new VelocityTracker();
+      this.tracker.add(performance.now(), p.x, p.y);
       g.setActive(true);
       g.setPeek(idx);
+      const mode = this.scrollMode();
+      g.scrubX = mode === 'drag' ? null : p.x;
+      if (mode === 'proportional') this.scrollProportional(p.x);
       g.haptic(4);
       if (this.pointerType !== 'touch') this.setCursor('grabbing');
       clearTimeout(this.lpTimer);
       if (this.s.longPress > 0) this.lpTimer = setTimeout(() => this.onLongPress(), this.s.longPress);
       return;
     }
+    g.setPeek(-1);
+    g.setActive(false);
     if (g.hitDeck(p)) {
       if (g.draw(1)) g.haptic(8);
       return;
@@ -153,6 +195,7 @@ export class Input {
     const now = performance.now();
     const g = this.game;
     this.last = p;
+    this.tracker.add(now, p.x, p.y);
 
     if (this.state === 'drag') {
       g.moveDrag(p.x, p.y, now);
@@ -175,12 +218,29 @@ export class Input {
       return;
     }
 
-    const idx = g.slotAt(p.x, this.idx);
-    if (idx !== this.idx && idx >= 0) {
-      this.idx = idx;
+    const mode = this.scrollMode();
+    if (mode === 'drag') {
+      // Swipe: the hand sticks to the finger, so the peeked card stays put.
+      if (this.state === 'scrub') g.dragScrollTo(this.scrollStart - (p.x - this.start.x));
+      g.scrubX = null;
+      return;
+    }
+    if (mode === 'proportional') this.scrollProportional(p.x);
+    g.scrubX = p.x; // edge mode auto-scrolls from this in the game loop
+
+    const idx = g.slotAt(p.x, g.peek);
+    if (idx !== g.peek && idx >= 0) {
       g.setPeek(idx);
       g.haptic(4);
     }
+  }
+
+  /** Proportional mode: finger position across the screen maps to the whole hand. */
+  scrollProportional(x) {
+    const m = this.game.m;
+    const left = m.safe.left + m.cw * 0.6;
+    const right = m.W - m.safe.right - m.cw * 0.6;
+    this.game.scrollToFraction((x - left) / Math.max(1, right - left));
   }
 
   onLongPress() {
@@ -190,7 +250,9 @@ export class Input {
 
   beginDrag(p, now) {
     clearTimeout(this.lpTimer);
-    if (this.game.pickUp(this.idx, p.x, p.y, now, this.pointerType)) this.state = 'drag';
+    const g = this.game;
+    if (g.peek < 0) return;
+    if (g.pickUp(g.peek, p.x, p.y, now, this.pointerType)) this.state = 'drag';
   }
 
   up(e, cancelled) {
@@ -206,14 +268,15 @@ export class Input {
       }
       g.release(now, cancelled);
     } else if (this.state === 'press' && !cancelled) {
-      g.toggleSelect(this.idx);
+      g.toggleSelect(g.peek);
     }
+    g.endScrollDrag(cancelled ? 0 : this.tracker.velocity(now).x);
+    g.scrubX = null;
     g.setPeek(-1);
     g.setActive(false);
     this.pid = null;
     this.state = 'idle';
-    this.idx = -1;
-    this.hoverIdx = -1;
+    this.hovering = false;
     this.setCursor('');
     // A mouse is still over the table after release: resume hover right away.
     if (!cancelled && e.pointerType && e.pointerType !== 'touch') this.hover(e);
