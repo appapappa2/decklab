@@ -1,0 +1,106 @@
+name: Branch previews
+
+# Deploys every branch to gh-pages as a subfolder:
+#   https://<owner>.github.io/<repo>/<branch>/
+# Deleting a branch removes its folder. The gh-pages root gets an index
+# page linking to every deployed branch.
+
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+  delete:
+
+permissions:
+  contents: write
+
+concurrency:
+  # One run per branch at a time; different branches may run in parallel
+  # (pushes to gh-pages are retried below if they race).
+  group: branch-preview-${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    env:
+      EVENT: ${{ github.event_name }}
+      BRANCH: ${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+    steps:
+      - name: Check out branch
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
+        with:
+          path: source
+          persist-credentials: false
+
+      - name: Check out gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+
+      - name: Update gh-pages
+        working-directory: site
+        run: |
+          set -euo pipefail
+
+          # Branch names like "feature/foo" become "feature-foo".
+          DIR="${BRANCH//\//-}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          write_index() {
+            {
+              echo '<!doctype html>'
+              echo '<html lang="en"><head><meta charset="utf-8">'
+              echo '<meta name="viewport" content="width=device-width, initial-scale=1">'
+              echo "<title>${GITHUB_REPOSITORY#*/} – branches</title>"
+              echo '<style>body{font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem}li{margin:.4rem 0}</style>'
+              echo "</head><body><h1>${GITHUB_REPOSITORY#*/}</h1><ul>"
+              for d in */; do
+                d="${d%/}"
+                [ -f "$d/index.html" ] || continue
+                safe=$(printf '%s' "$d" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')
+                echo "<li><a href=\"./${safe}/\">${safe}</a></li>"
+              done
+              echo '</ul></body></html>'
+            } > index.html
+          }
+
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth 1 origin gh-pages
+            git reset --hard FETCH_HEAD
+
+            if [ "$EVENT" = "delete" ]; then
+              [ -d "$DIR" ] && git rm -r --quiet "$DIR"
+              MSG="Remove preview for ${BRANCH}"
+            else
+              mkdir -p "$DIR"
+              rsync -a --delete --exclude='.git' --exclude='.github' ../source/ "$DIR/"
+              MSG="Deploy ${BRANCH} @ ${GITHUB_SHA::7}"
+            fi
+
+            touch .nojekyll
+            write_index
+            git add -A
+
+            if git diff --cached --quiet; then
+              echo "Nothing to change."
+              exit 0
+            fi
+
+            git commit --quiet -m "$MSG"
+            if git push origin HEAD:gh-pages; then
+              echo "Done: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/${DIR}/"
+              exit 0
+            fi
+
+            echo "Push rejected (attempt ${attempt}), retrying..."
+            sleep $((attempt * 3))
+          done
+
+          echo "Failed to push to gh-pages after 5 attempts." >&2
+          exit 1
