@@ -174,13 +174,39 @@ export class BeggarScene {
 
   // ------------------------------------------------------------ game setup
 
+  /** Switching modes: remove the other mode's cards (that game is saved) and hide the table until the next deal. */
+  wipe() {
+    this.input?.cancel();
+    const t = this.table;
+    const sprites = [...(this.byId?.values() ?? []), ...(this.sprites?.values() ?? [])];
+    if (t) sprites.push(...t.hand, ...t.played, ...t.leaving, ...(t.drag ? [t.drag.sprite] : []));
+    for (const sp of new Set(sprites)) sp.destroy();
+    this.byId?.clear();
+    this.sprites?.clear();
+    if (t) {
+      t.hand = [];
+      t.played = [];
+      t.leaving = [];
+      t.drag = null;
+      t.pendingLandings.clear();
+    }
+    this.queue = [];
+    if (this.badges) {
+      for (const b of this.badges.values()) b.remove();
+      this.badges.clear();
+    }
+    this.root.classList.add('fresh');
+  }
+
   setMode(mode) {
     const m = mode === 'multi' ? 'multi' : 'single';
     if (this.mode === m && this.rules) return;
-    if (this.rules) this.save();
+    const had = !!this.rules;
+    if (had) this.save();
     this.mode = m;
     this.rules = null;
     this.pendingStart = true;
+    if (had) this.wipe();
   }
 
   start() {
@@ -242,6 +268,7 @@ export class BeggarScene {
   }
 
   begin(rules, deal) {
+    this.root.classList.remove('fresh');
     for (const sp of this.sprites.values()) sp.destroy();
     this.sprites.clear();
     this.rules = rules;

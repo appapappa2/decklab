@@ -1037,6 +1037,8 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
     #12301f;
 }
 body.route-game .game-scene.active { display: block; }
+/* A scene that just switched modes shows only its bar and the setup card until the deal. */
+.game-scene.fresh > :not(.game-win):not(.game-top) { visibility: hidden; }
 #solitaire.dragging { cursor: grabbing !important; }
 
 .sol-slots, .sol-cards { position: absolute; inset: 0; pointer-events: none; }
@@ -1711,6 +1713,169 @@ body.route-game .game-scene.active { display: block; }
 .cs-could .front { box-shadow: 0 0 0 calc(var(--cw) * .025) rgba(143, 220, 190, .9); }
 .cs-scores td:first-child { font-weight: 600; font-size: 13px; }
 .cs-hint-right { text-align: right; }
+
+/* ----------------------------------------------------------------- euchre */
+
+#euchre {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(70, 110, 190, .3) 0%, transparent 75%),
+    #111a2c;
+}
+#euchre .game-title { flex: none; white-space: nowrap; }
+#euchre .sp-handoff { background: #111a2c; }
+.eu-trump { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--card-paper); color: #000; }
+.eu-trump:empty { display: none; }
+.eu-trump .suit-mark { width: 15px; }
+.eu-suit { display: inline-grid; place-items: center; vertical-align: -3px; color: #fff; }
+.eu-suit.red { color: #ff7d6b; }
+.eu-suit .suit-mark { width: 18px; }
+.eu-bid-row { display: flex; justify-content: center; gap: 8px; margin: 4px 0 10px; }
+.eu-bid-row .sp-bid-btn { min-width: 84px; padding: 11px 14px; }
+.eu-bid-row .sp-bid-btn:disabled { opacity: .35; }
+.eu-suit-btn { min-width: 58px !important; background: var(--card-paper) !important; }
+.eu-suit-btn .eu-suit { color: #000; }
+.eu-suit-btn .eu-suit.red { color: var(--card-red); }
+.eu-suit-btn .suit-mark { width: 24px; }
+.eu-alone { padding: 5px 12px; border: 1.5px solid rgba(255, 255, 255, .3); border-radius: 999px; background: none; color: var(--muted); font-size: 12px; font-weight: 700; }
+.eu-alone[aria-pressed="true"] { border-color: var(--sel); background: var(--sel); color: #2b1d00; }
+.eu-out { opacity: .35; }
+
+/* ------------------------------------------------------------------ poker */
+
+#poker {
+  --card-radius: calc(var(--cw) * .15);
+  background: #0b1712;
+}
+#poker .game-title { flex: none; white-space: nowrap; }
+.pk-blinds { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pk-felt {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 40%, #2f8a57 0%, #1d5a3a 60%, #144229 100%);
+  box-shadow: inset 0 0 0 6px #5a3a20, inset 0 0 0 8px rgba(0, 0, 0, .35), 0 12px 40px rgba(0, 0, 0, .5);
+  pointer-events: none;
+}
+#poker .pk-handoff { background: #0b1712; }
+.pk-seats { position: absolute; inset: 0; z-index: 2400; pointer-events: none; }
+.pk-seat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  min-width: 64px;
+  padding: 3px 8px 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .55);
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity .2s, box-shadow .2s;
+}
+.pk-seat.me { background: none; }
+.pk-seat.turn { box-shadow: 0 0 0 2px var(--sel); }
+.pk-seat.folded, .pk-seat.busted { opacity: .45; }
+.pk-name { font-size: 11px; font-weight: 800; color: rgba(255, 255, 255, .85); }
+.pk-stack { font-size: 12px; font-weight: 800; color: var(--sel); font-variant-numeric: tabular-nums; }
+.pk-status { font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, .6); min-height: 12px; }
+.pk-bet, .pk-button {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.pk-bet {
+  padding: 2px 7px 2px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .45);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pk-bet::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: #c4473a;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .8);
+}
+.pk-bet.show, .pk-button.show { opacity: 1; }
+.pk-button { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #f4f1e8; color: #111; font-size: 10px; font-weight: 900; box-shadow: 0 2px 4px rgba(0, 0, 0, .4); }
+.pk-pot { position: absolute; left: 0; top: 0; z-index: 2400; padding: 3px 10px; border-radius: 999px; background: rgba(0, 0, 0, .4); font-size: 13px; font-weight: 800; color: #fff3d6; pointer-events: none; font-variant-numeric: tabular-nums; }
+.pk-pot:empty { display: none; }
+.pk-myhand { position: absolute; left: 0; top: 0; z-index: 2400; padding: 2px 10px; border-radius: 999px; background: rgba(0, 0, 0, .55); font-size: 12px; font-weight: 800; pointer-events: none; }
+.pk-myhand:empty { display: none; }
+.pk-toast { z-index: 5500; white-space: normal; max-width: 92%; text-align: center; }
+.pk-toast-side { max-width: 30%; text-align: left; }
+.pk-win .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .16) rgba(255, 210, 87, .6); }
+.pk-actions {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(360px, calc(100% - 20px));
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(10, 14, 12, .82);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.pk-actions.show { display: flex; }
+.pk-actions.side { width: 236px; }
+.pk-actions [hidden] { display: none !important; }
+.pk-row { display: flex; gap: 6px; width: 100%; }
+.pk-row .game-btn { flex: 1; padding: 10px 6px; font-size: 14px; }
+.pk-fold { background: rgba(217, 87, 66, .25) !important; }
+.pk-sizer { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.pk-quick { display: flex; gap: 4px; }
+.pk-quick .game-btn { flex: 1; padding: 5px 0; font-size: 12px; }
+.pk-slider { width: 100%; accent-color: var(--sel); touch-action: pan-x; }
+.pk-count { grid-template-columns: repeat(5, 1fr); }
+.pk-count .gs-toggle-btn { min-width: 38px; }
+
+/* -------------------------------------------------------------- gin rummy */
+
+#gin {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(180, 70, 90, .26) 0%, transparent 75%),
+    #1e1015;
+}
+#gin .game-title { flex: none; white-space: nowrap; }
+.gn-score { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gn-handoff { background: #1e1015; }
+.gn-opp { text-align: right; }
+.gn-dw { position: absolute; left: 0; top: 0; z-index: 3; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .4); font-size: 12px; font-weight: 800; pointer-events: none; }
+.gn-dw:empty { display: none; }
+.gn-actions .game-btn[hidden] { display: none; }
+/* Meld cards: a green band along the top edge (the bottom is hidden below the screen). */
+.gn-meld .front { box-shadow: inset 0 calc(var(--cw) * .06) 0 #3fcf86, 0 1px 3px rgba(0, 0, 0, .16), 0 3px 7px rgba(0, 0, 0, .12); }
+.gn-glow .deck-stack { animation: c8-glow 1.4s ease-in-out infinite; }
+.gn-line { margin: 2px 0; }
+
+/* -------------------------------------------------------------- president */
+
+#president {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(90, 100, 200, .28) 0%, transparent 75%),
+    #12142a;
+}
+#president .game-title { flex: none; white-space: nowrap; }
+.pr-handoff { background: #12142a; }
+.pr-label .rm-name { font-size: 11px; }
+.pr-label .rm-sub { font-size: 10px; }
+.pr-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.pr-you { position: absolute; left: 0; top: 0; z-index: 3; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .75); pointer-events: none; }
+#president .rm-actions .game-btn[hidden] { display: none; }
 
 /* -------------------------------------------------- real phone: fullscreen */
 
