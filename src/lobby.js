@@ -101,7 +101,7 @@ export function initLobby(root, { onRoute }) {
       const text = h('div', 'lobby-item-text');
       text.append(h('div', 'lobby-item-name', g.name), h('div', 'lobby-item-blurb', g.blurb));
       const meta = h('div', 'lobby-item-meta');
-      const players = g.cpu && mode === 'single' ? 'vs CPU' : `${g.players} ${g.players === '1' ? 'player' : 'players'}`;
+      const players = g.cpu && mode === 'single' ? (typeof g.cpu === 'string' ? g.cpu : 'vs CPU') : `${g.players} ${g.players === '1' ? 'player' : 'players'}`;
       meta.append(h('span', 'lobby-players', players));
       if (!ready) meta.append(h('span', 'lobby-badge', 'Soon'));
       b.append(text, meta);
