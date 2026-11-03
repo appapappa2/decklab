@@ -1556,6 +1556,46 @@ body.route-game .game-scene.active { display: block; }
 .sp-bid-btn.nil { background: var(--sel); color: #2b1d00; font-size: 13px; }
 .sp-scores td:nth-child(2) { font-size: 13px; }
 
+/* ------------------------------------------------------------------ speed */
+
+#speed {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(220, 80, 60, .3) 0%, transparent 75%),
+    #1f1012;
+}
+#speed .game-title { flex: none; white-space: nowrap; }
+#speed.sd-bad { animation: sd-bad .3s; }
+@keyframes sd-bad { 30% { box-shadow: inset 0 0 0 4px rgba(255, 90, 80, .7); } }
+.sd-clock { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.sd-stock { transform-origin: 50% 50%; }
+.sd-label { text-align: left; }
+.sd-status { z-index: 3; }
+.sd-levels { grid-template-columns: repeat(3, 1fr); }
+.sd-levels .gs-toggle-btn { min-width: 70px; }
+.sd-banner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5500;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  scale: .6;
+  transition: opacity .15s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+}
+.sd-banner.show { opacity: 1; scale: 1; }
+.sd-banner.count { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; font-size: 84px; font-weight: 900; color: #fff; text-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.sd-banner.go { background: var(--sel); color: #2b1d00; font-size: 34px; font-weight: 900; }
+.sd-banner.info { color: var(--muted); font-size: 15px; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }
