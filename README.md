@@ -8,14 +8,18 @@ ES modules need to be served over HTTP, not `file://`:
 
 ```sh
 cd thedeck-lab
-python3 -m http.server 8000
+python3 serve.py        # optional port: python3 serve.py 8800
 ```
+
+Use `serve.py` rather than `python3 -m http.server`. The stock server only queues 5 connections, so the browser's parallel module requests sometimes get reset and the app silently never boots. `serve.py` also disables caching so edits show up on a normal reload.
 
 - **Desktop:** open <http://localhost:8000>. You get an emulated iPhone 15 frame (393×852) with the lab panel on the right.
 - **iPhone:** make sure the phone and computer are on the same Wi‑Fi. Find your Mac's IP with `ipconfig getifaddr en0`, then open `http://<ip>:8000` in Safari. It runs fullscreen and follows real orientation changes. For a true fullscreen experience, use Share → *Add to Home Screen*.
 - **Force a mode:** add `?mode=phone` or `?mode=desktop`.
 
-Desktop shortcuts: <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debug overlay, <kbd>Space</kbd> draws a card.
+The app opens on the **lobby**: pick *Singleplayer* or *Multiplayer* to see the games for that mode (the catalog lives in `src/games.js`; *Solitaire* and *War* (vs CPU) are playable in singleplayer; everything else, including multiplayer War, shows "Soon"). The **Dev** button opens the dev menu, which links to the hand feel prototype. Routes are hash-based, so you can link straight to a screen: `#/` (lobby), `#/dev` (dev menu), `#/dev/hand-feel` (prototype), `#/play/solitaire`, `#/play/war`. In the prototype, the **‹** button goes back to the dev menu.
+
+Desktop shortcuts (prototype only): <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debug overlay, <kbd>Space</kbd> draws a card.
 
 ## Gestures
 
@@ -46,7 +50,14 @@ Everything works with a mouse (Pointer Events), plus some mouse-specific behavio
 ```
 index.html      markup: device frame, screen, table, panel
 style.css       frame, felt, cards (DOM/CSS only), panel, phone fullscreen
-src/main.js     wiring, rAF loop, panel actions, shortcuts
+src/main.js     wiring, rAF loop, panel actions, shortcuts, route switching
+src/lobby.js    lobby + dev menu UI and hash routing
+src/games.js    game catalog (lobby) and dev menu entries
+src/solitaire/rules.js  Klondike rules: deal, legal moves, draw/recycle, undo, auto-finish, save format (no DOM)
+src/solitaire/scene.js  Solitaire screen: layout, spring-driven CardSprites, drag & drop, tap to move, HUD
+src/war/rules.js        War rules: deal, battles, wars, collecting, save format (no DOM)
+src/war/scene.js        War screen vs. CPU: layout, flips, banners, auto-play
+serve.py        dev server (bigger connection backlog, no caching)
 src/device.js   desktop frame (scale-to-fit, rotation, emulated safe areas) vs phone fullscreen (env() safe areas)
 src/game.js     deck/hand/pile state → per-frame spring targets; play/draw/sort/return
 src/input.js    pointer gesture state machine (press → scrub → drag / tap / long-press)
@@ -85,6 +96,14 @@ Units: **cw** = card widths, **ch** = card heights.
 - **Motion:** hand spring stiffness and damping ratio, a separate stiffer spring for the dragged card, deal stagger.
 - **Mouse:** hover to peek, hold the card where grabbed.
 - **Feedback:** haptics, debug overlay.
+
+## Solitaire
+
+Klondike. **Drag** a card or a face-up run onto a column or foundation, or **tap** a card to send it to the best legal spot (foundation first). Tap the stock to draw; tap the empty stock to turn the waste over. **Undo** (also <kbd>Cmd</kbd>/<kbd>Ctrl</kbd>+<kbd>Z</kbd>) has no limit within a session. *Draw 1 / Draw 3* toggles the stock rule; it starts a new game if you've already made a move. When everything is face up and dealt out, **Auto-finish** appears. The game in progress is saved to `localStorage` and resumes after a reload; undo history isn't saved.
+
+## War
+
+You (bottom, blue backs) against the CPU (top, red backs; left/right in landscape). **Tap** anywhere or press <kbd>Space</kbd> to flip; the CPU flips a beat later. The higher card takes both (aces high). Tapping while a decided round is still showing collects it right away and flips the next one. A **tie means war**: each side puts 3 cards face down and 1 face up, and the new face-up cards decide (wars can chain). A player short on cards plays what they have, with the last one face up; running out entirely loses. Won cards go to the bottom of the winner's deck in random order so games always end. Games run a couple of hundred rounds, so **Auto-play** flips by itself until you tap or press *Stop*. The game is saved between rounds.
 
 ## Known limitations
 
