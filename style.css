@@ -1504,6 +1504,58 @@ body.route-game .game-scene.active { display: block; }
 .sh-handoff { background: #22160f; }
 .rm-actions .game-btn[hidden] { display: none; }
 
+/* ----------------------------------------------------------------- spades */
+
+#spades {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(90, 120, 190, .28) 0%, transparent 75%),
+    #121726;
+}
+#spades .game-title { flex: none; white-space: nowrap; }
+.sp-score { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.sp-label { text-align: left; }
+.sp-label.right { text-align: right; }
+.sp-label.mate .rm-name { color: #8fb7ff; }
+.sp-status { z-index: 3; }
+.sp-handoff { background: #121726; }
+.sp-bid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5600;
+  width: min(330px, calc(100% - 24px));
+  padding: 14px 14px 16px;
+  border-radius: 20px;
+  background: rgba(20, 23, 28, .94);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  scale: .9;
+  transition: opacity .2s, scale .3s cubic-bezier(.3, 1.5, .5, 1);
+}
+.sp-bid.show { opacity: 1; pointer-events: auto; scale: 1; }
+.sp-bid-title { font-size: 18px; font-weight: 800; }
+.sp-bid-info { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+.sp-bid-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.sp-bid-btn {
+  padding: 9px 0;
+  border: 0;
+  border-radius: 10px;
+  background: #262b34;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+}
+.sp-bid-btn:hover { background: #313844; }
+.sp-bid-btn:active { transform: scale(.94); }
+.sp-bid-btn.nil { background: var(--sel); color: #2b1d00; font-size: 13px; }
+.sp-scores td:nth-child(2) { font-size: 13px; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }
