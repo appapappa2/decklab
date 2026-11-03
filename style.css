@@ -1712,6 +1712,33 @@ body.route-game .game-scene.active { display: block; }
 .cs-scores td:first-child { font-weight: 600; font-size: 13px; }
 .cs-hint-right { text-align: right; }
 
+/* ----------------------------------------------------------------- euchre */
+
+#euchre {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(70, 110, 190, .3) 0%, transparent 75%),
+    #111a2c;
+}
+#euchre .game-title { flex: none; white-space: nowrap; }
+#euchre .sp-handoff { background: #111a2c; }
+.eu-trump { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--card-paper); color: #000; }
+.eu-trump:empty { display: none; }
+.eu-trump .suit-mark { width: 15px; }
+.eu-suit { display: inline-grid; place-items: center; vertical-align: -3px; color: #fff; }
+.eu-suit.red { color: #ff7d6b; }
+.eu-suit .suit-mark { width: 18px; }
+.eu-bid-row { display: flex; justify-content: center; gap: 8px; margin: 4px 0 10px; }
+.eu-bid-row .sp-bid-btn { min-width: 84px; padding: 11px 14px; }
+.eu-bid-row .sp-bid-btn:disabled { opacity: .35; }
+.eu-suit-btn { min-width: 58px !important; background: var(--card-paper) !important; }
+.eu-suit-btn .eu-suit { color: #000; }
+.eu-suit-btn .eu-suit.red { color: var(--card-red); }
+.eu-suit-btn .suit-mark { width: 24px; }
+.eu-alone { padding: 5px 12px; border: 1.5px solid rgba(255, 255, 255, .3); border-radius: 999px; background: none; color: var(--muted); font-size: 12px; font-weight: 700; }
+.eu-alone[aria-pressed="true"] { border-color: var(--sel); background: var(--sel); color: #2b1d00; }
+.eu-out { opacity: .35; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

@@ -74,6 +74,11 @@ const LAYOUTS = {
     sticker: { x: 28, y: 26, color: '#f0c75e', ink: '#0b3d31' },
     chips: [[80, 30, '#c4473a'], [72, 24, '#222']],
   },
+  euchre: {
+    suit: 'H',
+    cards: [['back', 70, 36, 10], ['JH', 38, 60, -12], ['JD', 50, 57, 0], ['AH', 62, 60, 12]],
+    sticker: { x: 28, y: 26, color: '#f2c14e', ink: '#1c3566' },
+  },
   hearts: {
     suit: 'H',
     cards: [['2H', 34, 62, -22], ['9H', 44, 58, -9], ['AH', 66, 62, 20], ['QS', 54, 56, 5]],
