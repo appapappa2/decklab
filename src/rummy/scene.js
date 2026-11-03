@@ -175,13 +175,39 @@ export class RummyScene {
   // ------------------------------------------------------------ game setup
 
   /** Called by the router with 'single' or 'multi' before show(). */
+  /** Switching modes: remove the other mode's cards (that game is saved) and hide the table until the next deal. */
+  wipe() {
+    this.input?.cancel();
+    const t = this.table;
+    const sprites = [...(this.byId?.values() ?? []), ...(this.sprites?.values() ?? [])];
+    if (t) sprites.push(...t.hand, ...t.played, ...t.leaving, ...(t.drag ? [t.drag.sprite] : []));
+    for (const sp of new Set(sprites)) sp.destroy();
+    this.byId?.clear();
+    this.sprites?.clear();
+    if (t) {
+      t.hand = [];
+      t.played = [];
+      t.leaving = [];
+      t.drag = null;
+      t.pendingLandings.clear();
+    }
+    this.queue = [];
+    if (this.badges) {
+      for (const b of this.badges.values()) b.remove();
+      this.badges.clear();
+    }
+    this.root.classList.add('fresh');
+  }
+
   setMode(mode) {
     const m = mode === 'multi' ? 'multi' : 'single';
     if (this.mode === m && this.rules) return;
-    if (this.rules) this.save(); // keep the other mode's game
+    const had = !!this.rules;
+    if (had) this.save(); // keep the other mode's game
     this.mode = m;
     this.rules = null;
     this.pendingStart = true; // started in show(), once the layout exists
+    if (had) this.wipe();
   }
 
   start() {
@@ -248,6 +274,7 @@ export class RummyScene {
 
   /** Starts showing a game (new or restored). */
   begin(rules, viewer) {
+    this.root.classList.remove('fresh');
     this.input.cancel();
     const t = this.table;
     t.clearTable();
