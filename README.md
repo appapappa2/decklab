@@ -17,7 +17,7 @@ Use `serve.py` rather than `python3 -m http.server`. The stock server only queue
 - **iPhone:** make sure the phone and computer are on the same Wi‑Fi. Find your Mac's IP with `ipconfig getifaddr en0`, then open `http://<ip>:8000` in Safari. It runs fullscreen and follows real orientation changes. For a true fullscreen experience, use Share → *Add to Home Screen*.
 - **Force a mode:** add `?mode=phone` or `?mode=desktop`.
 
-The app opens on the **lobby**: pick *Singleplayer* or *Multiplayer* to see the games for that mode (the catalog lives in `src/games.js`; *Solitaire*, *War*, *Crazy Eights*, *Go Fish* (vs CPU), *Hearts* (vs 3 CPUs) and *Blackjack* (vs the dealer) are playable in singleplayer; everything else, including multiplayer modes, shows "Soon"). The **Dev** button opens the dev menu, which links to the hand feel prototype. Routes are hash-based, so you can link straight to a screen: `#/` (lobby), `#/dev` (dev menu), `#/dev/hand-feel` (prototype), `#/play/solitaire`, `#/play/war`, `#/play/crazy-eights`, `#/play/go-fish`, `#/play/hearts`, `#/play/blackjack`. In the prototype, the **‹** button goes back to the dev menu.
+The app opens on the **lobby**, a game select carousel: each game is a playing-card shaped cover built from its own cards, with the next and previous cards tilted away on either side and a big colored disc behind (as you move between games, the old disc fades away and the new game's disc grows from the center). The game's number and name, who you play against and a tagline sit under the card. Games that support multiplayer get a small **Single / Multi** toggle there too; each game remembers your choice, and a card is dimmed and marked *SOON* when the chosen mode isn't available yet (multiplayer, for now). **Swipe** or drag the cards, use the **mouse wheel**, **← →** or the dots, tap a side card to bring it forward, and tap the center card or press <kbd>Enter</kbd> to play: the camera zooms into the card while the game opens inside it through a growing circle, and the game only starts once the zoom has landed. Leaving a game plays the same zoom in reverse, back into its card. *Solitaire*, *War*, *Crazy Eights*, *Go Fish* (vs CPU), *Hearts* (vs 3 CPUs) and *Blackjack* (vs the dealer) are playable in singleplayer; multiplayer modes are all locked for now. The game catalog, with each game's colors, lives in `src/games.js`; the covers are drawn in `src/covers.js`. The small **dev** button in the corner opens the dev menu, which links to the hand feel prototype. Routes are hash-based, so you can link straight to a screen: `#/` (lobby), `#/dev` (dev menu), `#/dev/hand-feel` (prototype), `#/play/solitaire`, `#/play/war`, `#/play/crazy-eights`, `#/play/go-fish`, `#/play/hearts`, `#/play/blackjack`. In the prototype, the **‹** button goes back to the dev menu.
 
 Desktop shortcuts (prototype only): <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debug overlay, <kbd>Space</kbd> draws a card.
 
@@ -51,8 +51,9 @@ Everything works with a mouse (Pointer Events), plus some mouse-specific behavio
 index.html      markup: device frame, screen, table, panel
 style.css       frame, felt, cards (DOM/CSS only), panel, phone fullscreen
 src/main.js     wiring, rAF loop, panel actions, shortcuts, route switching
-src/lobby.js    lobby + dev menu UI and hash routing
+src/lobby.js    lobby carousel + dev menu UI and hash routing
 src/games.js    game catalog (lobby) and dev menu entries
+src/covers.js   lobby cover art per game, made from real card faces (container query units, any size)
 src/solitaire/rules.js  Klondike rules: deal, legal moves, draw/recycle, undo, auto-finish, save format (no DOM)
 src/solitaire/scene.js  Solitaire screen: layout, spring-driven CardSprites, drag & drop, tap to move, HUD
 src/war/rules.js        War rules: deal, battles, wars, collecting, save format (no DOM)

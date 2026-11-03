@@ -408,6 +408,15 @@ export class WarScene {
     window.addEventListener('pagehide', () => this.save());
   }
 
+  /** Pushes back everything time-based by `ms` (the lobby's zoom-in), so the game starts when it lands. */
+  postpone(ms) {
+    const now = performance.now();
+    for (const sp of this.sprites.values()) if (sp.waitUntil > now) sp.waitUntil += ms;
+    this.lockUntil = Math.max(this.lockUntil, now) + ms;
+    if (this.autoAt) this.autoAt = Math.max(this.autoAt, now) + ms;
+    if (this.collectAt) this.collectAt = Math.max(this.collectAt, now) + ms;
+  }
+
   cancel() {}
 
   // ------------------------------------------------------------ visibility

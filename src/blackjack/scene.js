@@ -461,6 +461,12 @@ export class BlackjackScene {
     this.save();
   }
 
+  /** Pushes back everything time-based by `ms` (the lobby's zoom-in), so the game starts when it lands. */
+  postpone(ms) {
+    const now = performance.now();
+    for (const q of this.queue) q.at = Math.max(q.at, now) + ms;
+  }
+
   cancel() {}
 
   // ----------------------------------------------------------- persistence
