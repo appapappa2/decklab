@@ -3,8 +3,8 @@
 //   #/dev           dev menu
 //   #/dev/hand-feel hand feel prototype (the lab)
 //   #/play/<game>   a game from GAMES that's ready in some mode
-import { GAMES, DEV_ITEMS } from './games.js?v=cribbage';
-import { coverHTML } from './covers.js?v=cribbage';
+import { GAMES, DEV_ITEMS } from './games.js?v=casino';
+import { coverHTML } from './covers.js?v=casino';
 import { Spring } from './spring.js';
 
 const INDEX_KEY = 'thedeck.lobby.game';

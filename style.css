@@ -1680,6 +1680,38 @@ body.route-game .game-scene.active { display: block; }
 .cb-show-title { font-size: 17px; font-weight: 900; }
 .cb-show-body { margin: 4px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.4; }
 
+/* ----------------------------------------------------------------- casino */
+
+#casino {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(40, 160, 120, .3) 0%, transparent 75%),
+    #0d1f1a;
+}
+#casino .game-title { flex: none; white-space: nowrap; }
+.cs-score { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cs-handoff { background: #0d1f1a; }
+.cs-opp { text-align: right; }
+.cs-badges { position: absolute; inset: 0; z-index: 2500; pointer-events: none; }
+.cs-badge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #3d7fd9;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+}
+.cs-badge.mine { background: var(--sel); color: #2b1d00; }
+.cs-picked .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .14) rgba(255, 210, 87, .5); }
+.cs-could .front { box-shadow: 0 0 0 calc(var(--cw) * .025) rgba(143, 220, 190, .9); }
+.cs-scores td:first-child { font-weight: 600; font-size: 13px; }
+.cs-hint-right { text-align: right; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }
