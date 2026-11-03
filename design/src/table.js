@@ -12,6 +12,8 @@
 //   onSelect(sp)      a card was tapped; return true if the scene handled
 //                     selection itself (optional; e.g. pick 3 cards to pass)
 //   hidePlayButtons() return true to suppress the button over selected cards (optional)
+//   pileIndexAt(p)    which pile card is under point p, or -1 (optional; with
+//   onPileTap(i)      this, taps on the pile report the card that was hit)
 import { Game } from './game.js?v=middle-only-landings';
 import { CardSprite } from './cards.js?v=landing-burst';
 import { clamp } from './layout.js';
@@ -95,8 +97,16 @@ export class RuleTable extends Game {
     return 0;
   }
 
-  /** Pile tap from Input: nothing to do in a real game. */
-  returnPlayed() {}
+  hitPile(p) {
+    if (!this.scene.pileIndexAt) return super.hitPile(p);
+    this.pileHit = this.scene.pileIndexAt(p);
+    return this.pileHit >= 0;
+  }
+
+  /** Pile tap from Input (right after hitPile said yes). */
+  returnPlayed() {
+    if (this.scene.onPileTap && this.pileHit >= 0) this.scene.onPileTap(this.pileHit);
+  }
 
   /** A specific card from the deck into the hand. */
   addCard(card, delay = 0) {

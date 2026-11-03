@@ -7,8 +7,8 @@
 //               (as if the camera pushes through the grid) while the lobby
 //               zooms in from the center underneath them
 // A tap, click or key press skips it.
-import { GAMES } from './games.js?v=covers';
-import { coverHTML } from './covers.js?v=covers';
+import { GAMES } from './games.js?v=speed';
+import { coverHTML } from './covers.js?v=speed';
 
 const POP_SWEEP_MS = 1250; // last card has popped in by now
 const SCROLL_AT = 1100;

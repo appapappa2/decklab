@@ -5,7 +5,7 @@
 // and the CPU's cards land on the same pile.
 import { Input } from '../input.js';
 import { cardBackHTML, suitHTML, SUITS } from '../cards.js?v=landing-burst';
-import { RuleTable } from '../table.js?v=hearts';
+import { RuleTable } from '../table.js?v=rummy';
 import { SparkleTrail } from '../sparkles.js?v=landing-burst';
 import { LandingRipples } from '../ripples.js?v=water-ripple';
 import { CrazyEights } from './rules.js';

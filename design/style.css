@@ -1446,6 +1446,156 @@ body.route-game .game-scene.active { display: block; }
 .bj-chip-50 { background: #c4473a; }
 .bj-chip-100 { background: #222; }
 
+/* -------------------------------------------------------------- rummy 500 */
+
+#rummy-500 {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(200, 140, 40, .26) 0%, transparent 75%),
+    #1e1a10;
+}
+#rummy-500 .game-title { flex: none; white-space: nowrap; }
+.rm-stock { transform-origin: 50% 50%; }
+.rm-label, .rm-row-label, .rm-hint, .rm-actions { position: absolute; left: 0; top: 0; z-index: 3; white-space: nowrap; }
+.rm-label { pointer-events: none; text-align: center; }
+.rm-name { font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .8); }
+.rm-sub { font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, .5); font-variant-numeric: tabular-nums; }
+.rm-label.active .rm-name { color: var(--sel); }
+.rm-label.active .rm-name::before { content: '● '; font-size: 8px; vertical-align: 2px; }
+.rm-row-label { pointer-events: none; color: rgba(255, 255, 255, .45); font-size: 11px; font-weight: 700; }
+.rm-hint { pointer-events: none; color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 600; }
+.rm-actions { z-index: 5200; display: flex; gap: 6px; }
+.rm-actions .game-btn:disabled { opacity: .35; }
+.rm-toast { z-index: 5500; }
+.rm-must .front { box-shadow: 0 0 0 calc(var(--cw) * .035) #8fb7ff, 0 0 calc(var(--cw) * .16) rgba(143, 183, 255, .6); }
+.rm-count { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0 8px; }
+.rm-count-label { font-weight: 800; }
+.rm-count-opts { grid-template-columns: repeat(3, 1fr); margin: 0; border-color: rgba(255, 255, 255, .8); }
+.rm-count-opts::before { display: none; }
+.rm-count-opts .gs-toggle-btn { color: #fff; min-width: 48px; }
+.rm-count-opts .gs-toggle-btn[aria-checked="true"] { background: var(--sel); color: #2b1d00; }
+/* Pass-and-play cover: fully opaque so nobody sees the last hand. */
+.rm-handoff {
+  position: absolute;
+  inset: 0;
+  z-index: 6800;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #1e1a10;
+  text-align: center;
+}
+.rm-handoff.show { display: flex; }
+.rm-handoff-title { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+.rm-handoff-sub { margin-bottom: 14px; color: var(--muted); font-size: 15px; }
+
+/* --------------------------------------------------------------- shithead */
+
+#shithead {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(190, 110, 60, .26) 0%, transparent 75%),
+    #22160f;
+}
+#shithead .game-title { flex: none; white-space: nowrap; }
+.sh-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.sh-handoff { background: #22160f; }
+.rm-actions .game-btn[hidden] { display: none; }
+
+/* ----------------------------------------------------------------- spades */
+
+#spades {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(90, 120, 190, .28) 0%, transparent 75%),
+    #121726;
+}
+#spades .game-title { flex: none; white-space: nowrap; }
+.sp-score { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.sp-label { text-align: left; }
+.sp-label.right { text-align: right; }
+.sp-label.mate .rm-name { color: #8fb7ff; }
+.sp-status { z-index: 3; }
+.sp-handoff { background: #121726; }
+.sp-bid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5600;
+  width: min(330px, calc(100% - 24px));
+  padding: 14px 14px 16px;
+  border-radius: 20px;
+  background: rgba(20, 23, 28, .94);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  scale: .9;
+  transition: opacity .2s, scale .3s cubic-bezier(.3, 1.5, .5, 1);
+}
+.sp-bid.show { opacity: 1; pointer-events: auto; scale: 1; }
+.sp-bid-title { font-size: 18px; font-weight: 800; }
+.sp-bid-info { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+.sp-bid-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.sp-bid-btn {
+  padding: 9px 0;
+  border: 0;
+  border-radius: 10px;
+  background: #262b34;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+}
+.sp-bid-btn:hover { background: #313844; }
+.sp-bid-btn:active { transform: scale(.94); }
+.sp-bid-btn.nil { background: var(--sel); color: #2b1d00; font-size: 13px; }
+.sp-scores td:nth-child(2) { font-size: 13px; }
+
+/* ------------------------------------------------------------------ speed */
+
+#speed {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(220, 80, 60, .3) 0%, transparent 75%),
+    #1f1012;
+}
+#speed .game-title { flex: none; white-space: nowrap; }
+#speed.sd-bad { animation: sd-bad .3s; }
+@keyframes sd-bad { 30% { box-shadow: inset 0 0 0 4px rgba(255, 90, 80, .7); } }
+.sd-clock { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.sd-stock { transform-origin: 50% 50%; }
+.sd-label { text-align: left; }
+.sd-status { z-index: 3; }
+.sd-levels { grid-template-columns: repeat(3, 1fr); }
+.sd-levels .gs-toggle-btn { min-width: 70px; }
+.sd-banner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5500;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  scale: .6;
+  transition: opacity .15s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+}
+.sd-banner.show { opacity: 1; scale: 1; }
+.sd-banner.count { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; font-size: 84px; font-weight: 900; color: #fff; text-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.sd-banner.go { background: var(--sel); color: #2b1d00; font-size: 34px; font-weight: 900; }
+.sd-banner.info { color: var(--muted); font-size: 15px; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

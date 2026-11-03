@@ -7,7 +7,7 @@ import { cardBackHTML } from '../cards.js?v=landing-burst';
 import { createDeck } from '../cards.js';
 import { SparkleTrail } from '../sparkles.js?v=landing-burst';
 import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=hearts';
+import { RuleTable } from '../table.js?v=rummy';
 import { GoFish, other } from './rules.js';
 
 const SAVE_KEY = 'thedeck.gofish.v1';
