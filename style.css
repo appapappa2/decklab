@@ -1861,6 +1861,22 @@ body.route-game .game-scene.active { display: block; }
 .gn-glow .deck-stack { animation: c8-glow 1.4s ease-in-out infinite; }
 .gn-line { margin: 2px 0; }
 
+/* -------------------------------------------------------------- president */
+
+#president {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(90, 100, 200, .28) 0%, transparent 75%),
+    #12142a;
+}
+#president .game-title { flex: none; white-space: nowrap; }
+.pr-handoff { background: #12142a; }
+.pr-label .rm-name { font-size: 11px; }
+.pr-label .rm-sub { font-size: 10px; }
+.pr-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.pr-you { position: absolute; left: 0; top: 0; z-index: 3; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .75); pointer-events: none; }
+#president .rm-actions .game-btn[hidden] { display: none; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

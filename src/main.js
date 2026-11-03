@@ -6,8 +6,8 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=gin';
-import { playIntro } from './intro.js?v=gin';
+import { initLobby } from './lobby.js?v=president';
+import { playIntro } from './intro.js?v=president';
 import { SolitaireScene } from './solitaire/scene.js?v=gin';
 import { WarScene } from './war/scene.js?v=gin';
 import { EightsScene } from './eights/scene.js?v=gin';
@@ -24,6 +24,7 @@ import { CasinoScene } from './casino/scene.js?v=gin';
 import { EuchreScene } from './euchre/scene.js?v=gin';
 import { PokerScene } from './poker/scene.js?v=gin';
 import { GinScene } from './gin/scene.js?v=gin';
+import { PresidentScene } from './president/scene.js?v=president';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -78,6 +79,7 @@ const SCENES = {
   euchre: { title: 'Euchre', make: (root, opts) => new EuchreScene(root, opts) },
   poker: { title: 'Texas Hold’em', make: (root, opts) => new PokerScene(root, opts) },
   gin: { title: 'Gin Rummy', make: (root, opts) => new GinScene(root, opts) },
+  president: { title: 'President', make: (root, opts) => new PresidentScene(root, opts) },
 };
 const scenes = {};
 let current = null;
