@@ -1491,6 +1491,19 @@ body.route-game .game-scene.active { display: block; }
 .rm-handoff-title { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
 .rm-handoff-sub { margin-bottom: 14px; color: var(--muted); font-size: 15px; }
 
+/* --------------------------------------------------------------- shithead */
+
+#shithead {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(190, 110, 60, .26) 0%, transparent 75%),
+    #22160f;
+}
+#shithead .game-title { flex: none; white-space: nowrap; }
+.sh-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.sh-handoff { background: #22160f; }
+.rm-actions .game-btn[hidden] { display: none; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

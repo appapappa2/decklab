@@ -6,8 +6,8 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=rummy';
-import { playIntro } from './intro.js?v=rummy';
+import { initLobby } from './lobby.js?v=shithead';
+import { playIntro } from './intro.js?v=shithead';
 import { SolitaireScene } from './solitaire/scene.js?v=rummy';
 import { WarScene } from './war/scene.js?v=rummy';
 import { EightsScene } from './eights/scene.js?v=rummy';
@@ -15,6 +15,7 @@ import { GoFishScene } from './gofish/scene.js?v=rummy';
 import { HeartsScene } from './hearts/scene.js?v=rummy';
 import { BlackjackScene } from './blackjack/scene.js?v=rummy';
 import { RummyScene } from './rummy/scene.js?v=rummy';
+import { ShitheadScene } from './shithead/scene.js?v=shithead';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -60,6 +61,7 @@ const SCENES = {
   hearts: { title: 'Hearts', make: (root, opts) => new HeartsScene(root, opts) },
   blackjack: { title: 'Blackjack', make: (root, opts) => new BlackjackScene(root, opts) },
   'rummy-500': { title: 'Rummy 500', make: (root, opts) => new RummyScene(root, opts) },
+  shithead: { title: 'Shithead', make: (root, opts) => new ShitheadScene(root, opts) },
 };
 const scenes = {};
 let current = null;

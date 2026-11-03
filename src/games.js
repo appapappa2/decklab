@@ -14,6 +14,7 @@ export const GAMES = [
   { id: 'war', name: 'War', blurb: 'Flip cards. Highest card takes both.', modes: ['single', 'multi'], ready: ['single'], players: '2', cpu: true, route: '#/play/war', tag: 'Highest card wins', colors: ['#d8443a', '#ff6a3d', '#ffc04a'] },
   { id: 'blackjack', name: 'Blackjack', blurb: 'Beat the dealer to 21 without going over.', modes: ['single'], ready: ['single'], players: '1', cpu: 'vs dealer', route: '#/play/blackjack', tag: 'Blackjack pays 3 to 2', colors: ['#17613f', '#3fcf86', '#f5d34a'] },
   { id: 'rummy-500', name: 'Rummy 500', blurb: 'Meld sets and runs. First to 500 wins.', modes: ['single', 'multi'], ready: ['single', 'multi'], players: '2–4', cpu: 'vs 1–3 CPUs', multiNote: '2–4 players · pass and play', route: '#/play/rummy-500', tag: 'Dig deep in the discard pile', colors: ['#c98a1c', '#ffd257', '#4fb3a9'] },
+  { id: 'shithead', name: 'Shithead', blurb: "Get rid of your cards. Don't be the last one holding them.", modes: ['single', 'multi'], ready: ['single', 'multi'], players: '2–4', cpu: 'vs 1–3 CPUs', multiNote: '2–4 players · pass and play', route: '#/play/shithead', tag: '2 resets · 10 burns', colors: ['#7b4a2a', '#e8a46a', '#7fc8a9'] },
   { id: 'hearts', name: 'Hearts', blurb: 'Avoid hearts and the queen of spades.', modes: ['single', 'multi'], ready: ['single'], players: '4', cpu: 'vs 3 CPUs', route: '#/play/hearts', tag: 'Dodge the queen', colors: ['#e5578a', '#ff8fb8', '#b07dff'] },
 ];
 
