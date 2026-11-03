@@ -27,7 +27,7 @@ const SUIT_ART = {
   },
 };
 
-function suitHTML(id) {
+export function suitHTML(id) {
   const art = SUIT_ART[id];
   return `<svg class="suit-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false">` +
     `<path fill="currentColor" d="${art.shape}"/>` +

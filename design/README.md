@@ -17,7 +17,7 @@ Use `serve.py` rather than `python3 -m http.server`. The stock server only queue
 - **iPhone:** make sure the phone and computer are on the same Wi‑Fi. Find your Mac's IP with `ipconfig getifaddr en0`, then open `http://<ip>:8000` in Safari. It runs fullscreen and follows real orientation changes. For a true fullscreen experience, use Share → *Add to Home Screen*.
 - **Force a mode:** add `?mode=phone` or `?mode=desktop`.
 
-The app opens on the **lobby**: pick *Singleplayer* or *Multiplayer* to see the games for that mode (the catalog lives in `src/games.js`; *Solitaire* and *War* (vs CPU) are playable in singleplayer; everything else, including multiplayer War, shows "Soon"). The **Dev** button opens the dev menu, which links to the hand feel prototype. Routes are hash-based, so you can link straight to a screen: `#/` (lobby), `#/dev` (dev menu), `#/dev/hand-feel` (prototype), `#/play/solitaire`, `#/play/war`. In the prototype, the **‹** button goes back to the dev menu.
+The app opens on the **lobby**: pick *Singleplayer* or *Multiplayer* to see the games for that mode (the catalog lives in `src/games.js`; *Solitaire*, *War*, *Crazy Eights*, *Go Fish* (vs CPU), *Hearts* (vs 3 CPUs) and *Blackjack* (vs the dealer) are playable in singleplayer; everything else, including multiplayer modes, shows "Soon"). The **Dev** button opens the dev menu, which links to the hand feel prototype. Routes are hash-based, so you can link straight to a screen: `#/` (lobby), `#/dev` (dev menu), `#/dev/hand-feel` (prototype), `#/play/solitaire`, `#/play/war`, `#/play/crazy-eights`, `#/play/go-fish`, `#/play/hearts`, `#/play/blackjack`. In the prototype, the **‹** button goes back to the dev menu.
 
 Desktop shortcuts (prototype only): <kbd>R</kbd> rotates the frame, <kbd>G</kbd> toggles the debug overlay, <kbd>Space</kbd> draws a card.
 
@@ -57,6 +57,15 @@ src/solitaire/rules.js  Klondike rules: deal, legal moves, draw/recycle, undo, a
 src/solitaire/scene.js  Solitaire screen: layout, spring-driven CardSprites, drag & drop, tap to move, HUD
 src/war/rules.js        War rules: deal, battles, wars, collecting, save format (no DOM)
 src/war/scene.js        War screen vs. CPU: layout, flips, banners, auto-play
+src/table.js    RuleTable: the lab's Game (the tuned hand) with hooks so a game decides what playing a card means
+src/eights/rules.js     Crazy Eights rules + CPU strategy, save format (no DOM)
+src/eights/scene.js     Crazy Eights vs. CPU: RuleTable + Input, CPU hand, suit picker
+src/gofish/rules.js     Go Fish rules + CPU strategy (remembers your asks), event log, save format (no DOM)
+src/gofish/scene.js     Go Fish vs. CPU: RuleTable + Input, asks, books, speech bubbles, event playback
+src/hearts/rules.js     Hearts rules (passing, tricks, scoring, shooting the moon) + CPU strategy (no DOM)
+src/hearts/scene.js     Hearts vs. 3 CPUs: RuleTable + Input, passing, tricks, scoreboard
+src/blackjack/rules.js  Blackjack rules: bets, hit/stand/double/split, dealer play, payouts, event log (no DOM)
+src/blackjack/scene.js  Blackjack table: chips, action buttons, animated deal from the shoe, results
 serve.py        dev server (bigger connection backlog, no caching)
 src/device.js   desktop frame (scale-to-fit, rotation, emulated safe areas) vs phone fullscreen (env() safe areas)
 src/game.js     deck/hand/pile state → per-frame spring targets; play/draw/sort/return
@@ -104,6 +113,22 @@ Klondike. **Drag** a card or a face-up run onto a column or foundation, or **tap
 ## War
 
 You (bottom, blue backs) against the CPU (top, red backs; left/right in landscape). **Tap** anywhere or press <kbd>Space</kbd> to flip; the CPU flips a beat later. The higher card takes both (aces high). Tapping while a decided round is still showing collects it right away and flips the next one. A **tie means war**: each side puts 3 cards face down and 1 face up, and the new face-up cards decide (wars can chain). A player short on cards plays what they have, with the last one face up; running out entirely loses. Won cards go to the bottom of the winner's deck in random order so games always end. Games run a couple of hundred rounds, so **Auto-play** flips by itself until you tap or press *Stop*. The game is saved between rounds.
+
+## Crazy Eights
+
+You against the CPU, 7 cards each. **Your hand is the lab's hand**: same gestures (scrub to peek, drag up or flick to play, tap + *Play*, reorder, scroll) and the same tuning, since it reads the settings saved in the Hand feel prototype. Play a card matching the top card's suit or rank; **eights are wild**, and you then pick the next suit. Cards you can't play are dimmed, and an illegal play snaps back with a hint. If you can't play, the deck glows: tap it to draw, one card at a time, until you can. When the deck runs out, the pile (except the top card) is shuffled back in; if there's still nothing to draw, you pass, and if both players pass in a row the smaller hand wins. The CPU plays into the suit it holds most of, saves its eights for when it's stuck, and names its strongest suit. Who starts alternates between games. The game is saved after every move.
+
+## Go Fish
+
+You against the CPU, 7 cards each, with the lab's hand again. **Playing a card asks for its rank**: drag it up toward the CPU, flick it, or tap it and press *Ask*. The card stays in your hand. If the CPU has any of that rank, it hands them all over and you go again; otherwise it says *Go fish!* and you draw from the pond, going again if you fish the rank you asked for. Four of a rank is a book and is laid down right away (your books sit above your hand, the CPU's under its hand; beside them in landscape). Cards you receive slot in next to the same rank. An empty hand draws a card from the pond; with the pond empty, that player sits out. When all 13 books are down, the most books wins. The CPU remembers which ranks you've asked for and goes after those first; otherwise it asks for the rank it holds most of. Speech bubbles narrate each step, and the game is saved after every ask.
+
+## Hearts
+
+You (bottom) against three CPUs: West, North and East, playing clockwise. 13 cards each, again in the lab's hand. **Passing:** before each hand, tap 3 cards and press *Pass*; the direction rotates left, right, across, then a hand with no pass. Cards you receive glow blue for a moment, and your hand is sorted by suit. **Playing:** drag a card up, flick it, or tap it and press *Play*. The 2♣ leads the first trick; follow suit if you can; no hearts or Q♠ on the first trick; hearts can't be led until one has been played. Cards you can't play are dimmed, and an illegal play snaps back with the reason ("Follow suit: play a club"). The highest card of the led suit takes the trick (aces high) and leads the next. Each heart is 1 point and the Q♠ is 13; taking all 26 shoots the moon (everyone else gets 26). After each hand a scoreboard shows the points; when someone reaches 100, the lowest score wins. The CPUs pass their dangerous cards (high spades, high hearts, cards that empty a short suit), duck under the winning card when they can, and dump the Q♠ and high hearts when they can't follow suit. The game is saved after every card.
+
+## Blackjack
+
+You against the dealer, starting with a bank of 1,000. Tap the **chips** (10/25/50/100) to build a bet, then **Deal** (or <kbd>Space</kbd>). Play with **Hit / Stand / Double / Split** (or <kbd>H</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>P</kbd>). Blackjack pays 3:2 (rounded down to whole chips), other wins 1:1, and the dealer stands on all 17s and peeks for blackjack when showing an ace or a ten. Double on any first two cards, including after a split. Split pairs of the same value into up to 4 hands; split aces get one card each, and 21 on a split hand isn't a blackjack. No insurance. One deck, dealt from the shoe on the right, with used cards stacking in the tray on the left until it's reshuffled (when fewer than 15 cards are left). Totals show next to each hand ("soft 15"); after the dealer plays, each hand shows its result and the bank updates. If you run out of chips, *Reset bank* gives you 1,000 again. Your bank and bet are saved; leaving in the middle of a round gives the bet back.
 
 ## Known limitations
 

@@ -6,9 +6,13 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=war';
+import { initLobby } from './lobby.js?v=blackjack';
 import { SolitaireScene } from './solitaire/scene.js?v=war';
 import { WarScene } from './war/scene.js?v=war';
+import { EightsScene } from './eights/scene.js?v=hearts';
+import { GoFishScene } from './gofish/scene.js?v=hearts';
+import { HeartsScene } from './hearts/scene.js?v=hearts';
+import { BlackjackScene } from './blackjack/scene.js?v=blackjack';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -49,6 +53,10 @@ let input = null;
 const SCENES = {
   solitaire: { title: 'Solitaire', make: (root, opts) => new SolitaireScene(root, opts) },
   war: { title: 'War', make: (root, opts) => new WarScene(root, opts) },
+  'crazy-eights': { title: 'Crazy Eights', make: (root, opts) => new EightsScene(root, opts) },
+  'go-fish': { title: 'Go Fish', make: (root, opts) => new GoFishScene(root, opts) },
+  hearts: { title: 'Hearts', make: (root, opts) => new HeartsScene(root, opts) },
+  blackjack: { title: 'Blackjack', make: (root, opts) => new BlackjackScene(root, opts) },
 };
 const scenes = {};
 let current = null;
@@ -129,6 +137,20 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// The screen and game scenes clip with overflow: hidden, but focusing a button
+// near an edge can still scroll them. Keep them pinned.
+document.addEventListener(
+  'scroll',
+  (e) => {
+    const t = e.target;
+    if (t instanceof Element && (t.id === 'screen' || t.classList.contains('game-scene'))) {
+      t.scrollTop = 0;
+      t.scrollLeft = 0;
+    }
+  },
+  true,
+);
+
 // Handy for poking at state from the devtools console.
 window.lab = { game, input, settings, device, sparkles, ripples };
 
@@ -142,6 +164,9 @@ function openGame(id) {
   if (!scenes[id]) {
     const sc = def.make($(id), {
       scale: () => device.scale,
+      device,
+      settings,
+      haptic,
       onExit: () => {
         location.hash = '#/';
       },
