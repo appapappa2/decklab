@@ -221,7 +221,7 @@ export class SolitaireScene {
 
   update(now, dt) {
     if (!this.m) return;
-    if (this.started && !this.game.won) this.elapsed += dt * 1000;
+    if (this.started && !this.game.won && now >= (this.heldUntil ?? 0)) this.elapsed += dt * 1000;
 
     if (this.finishing && now >= this.finishing) {
       const mv = this.game.nextFinishMove();
@@ -450,6 +450,14 @@ export class SolitaireScene {
     if (hit?.pile === 'stock') cursor = 'pointer';
     else if (hit && this.game.canPick(hit.pile, hit.index)) cursor = 'grab';
     if (this.root.style.cursor !== cursor) this.root.style.cursor = cursor;
+  }
+
+  /** Pushes back everything time-based by `ms` (the lobby's zoom-in), so the game starts when it lands. */
+  postpone(ms) {
+    const now = performance.now();
+    for (const sp of this.sprites.values()) if (sp.waitUntil > now) sp.waitUntil += ms;
+    if (this.finishing) this.finishing = Math.max(this.finishing, now) + ms;
+    this.heldUntil = now + ms;
   }
 
   cancel() {

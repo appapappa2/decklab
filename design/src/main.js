@@ -6,13 +6,13 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=blackjack';
-import { SolitaireScene } from './solitaire/scene.js?v=war';
-import { WarScene } from './war/scene.js?v=war';
-import { EightsScene } from './eights/scene.js?v=hearts';
-import { GoFishScene } from './gofish/scene.js?v=hearts';
-import { HeartsScene } from './hearts/scene.js?v=hearts';
-import { BlackjackScene } from './blackjack/scene.js?v=blackjack';
+import { initLobby } from './lobby.js?v=toggle';
+import { SolitaireScene } from './solitaire/scene.js?v=hold';
+import { WarScene } from './war/scene.js?v=hold';
+import { EightsScene } from './eights/scene.js?v=hold';
+import { GoFishScene } from './gofish/scene.js?v=hold';
+import { HeartsScene } from './hearts/scene.js?v=hold';
+import { BlackjackScene } from './blackjack/scene.js?v=hold';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -158,6 +158,7 @@ window.lab = { game, input, settings, device, sparkles, ripples };
 // updated) on its route. Games are created the first time they're opened.
 let inLab = false;
 let view = 'lobby';
+const ZOOM_MS = 600; // opening a game from the lobby
 function openGame(id) {
   const def = SCENES[id];
   if (!def) return null;
@@ -181,10 +182,12 @@ $('lab-back').addEventListener('pointerdown', (e) => e.stopPropagation());
 $('lab-back').addEventListener('click', () => {
   location.hash = '#/dev';
 });
-initLobby($('lobby'), {
-  onRoute(route) {
+const lobbyNav = initLobby($('lobby'), {
+  onRoute(route, { zoomFrom } = {}) {
     const lab = route.view === 'lab';
     const game = route.view === 'game' ? openGame(route.id) : null;
+    const leaving = view === 'game' && route.view === 'lobby' ? current : null;
+    const leavingId = leaving && Object.keys(scenes).find((id) => scenes[id] === leaving);
     view = lab ? 'lab' : game ? 'game' : 'lobby';
     inLab = lab;
     input.cancel();
@@ -196,8 +199,78 @@ initLobby($('lobby'), {
     document.body.classList.remove('panel-open');
     document.title = lab ? 'The Deck Lab · Hand Feel' : game ? `The Deck · ${SCENES[route.id].title}` : 'The Deck';
     device.measure(); // the side panel only takes space in the lab
+    if (game && zoomFrom) {
+      game.postpone?.(ZOOM_MS); // nothing moves until the zoom lands
+      zoomGame($(route.id), zoomFrom, 'in');
+    } else if (leavingId) {
+      // Back to the lobby: shrink the game back into its card.
+      const rect = lobbyNav?.coverRect(leavingId);
+      if (rect) zoomGame($(leavingId), rect, 'out');
+    }
   },
 });
+
+/**
+ * Opening a game from the lobby ('in'): the game starts out shrunk to sit
+ * inside the card that was tapped, and the camera zooms into that card (lobby
+ * and game scale together) while a small circle in the middle of the card
+ * grows to reveal the game. Leaving ('out') plays the same thing backwards.
+ * All in #screen-local px, so the scaled desktop frame works.
+ */
+let zoomRaf = 0;
+let zoomEnd = null;
+function zoomGame(sceneEl, rect, dir) {
+  zoomEnd?.(); // finish a zoom that's still running
+  const screen = $('screen');
+  const lobbyEl = $('lobby');
+  const sr = screen.getBoundingClientRect();
+  const W = screen.offsetWidth;
+  const H = screen.offsetHeight;
+  const k = sr.width / W || 1;
+  const from = { x: (rect.left + rect.width / 2 - sr.left) / k, y: (rect.top + rect.height / 2 - sr.top) / k };
+  const s0 = rect.width / k / Math.min(W, H); // game's short side fits the cover
+  const r0 = Math.min(W, H) * 0.12;
+  const R = Math.hypot(W, H) / 2 + 2;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+  const start = performance.now();
+  cancelAnimationFrame(zoomRaf);
+  document.body.classList.add('zooming');
+  // Leaving: the scene is already hidden by the router; keep it on screen until it's back in its card.
+  if (dir === 'out') sceneEl.classList.add('zoom-out');
+  lobbyEl.style.transformOrigin = `${from.x}px ${from.y}px`;
+  sceneEl.style.transformOrigin = '0 0';
+
+  const frame = (now) => {
+    const t = Math.min(1, (now - start) / ZOOM_MS);
+    const tt = dir === 'out' ? 1 - t : t;
+    const e = ease(tt);
+    const s = s0 + (1 - s0) * e; // game scale
+    const px = from.x + (W / 2 - from.x) * e; // where the game's center is
+    const py = from.y + (H / 2 - from.y) * e;
+    // Lobby zooms by the same factor around the cover, and follows it.
+    lobbyEl.style.transform = `translate(${(px - from.x).toFixed(2)}px, ${(py - from.y).toFixed(2)}px) scale(${(s / s0).toFixed(4)})`;
+    sceneEl.style.transform = `translate(${(px - (W / 2) * s).toFixed(2)}px, ${(py - (H / 2) * s).toFixed(2)}px) scale(${s.toFixed(4)})`;
+    const r = r0 + (R - r0) * ease(Math.min(1, tt * 1.08));
+    sceneEl.style.clipPath = `circle(${r.toFixed(1)}px at ${W / 2}px ${H / 2}px)`;
+    if (t < 1) {
+      zoomRaf = requestAnimationFrame(frame);
+      return;
+    }
+    zoomEnd();
+  };
+  zoomEnd = () => {
+    cancelAnimationFrame(zoomRaf);
+    zoomEnd = null;
+    for (const el of [lobbyEl, sceneEl]) {
+      el.style.transform = '';
+      el.style.transformOrigin = '';
+      el.style.clipPath = '';
+    }
+    sceneEl.classList.remove('zoom-out');
+    document.body.classList.remove('zooming');
+  };
+  zoomRaf = requestAnimationFrame(frame);
+}
 
 // Boot
 device.measure();

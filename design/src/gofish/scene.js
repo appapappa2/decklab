@@ -544,6 +544,16 @@ export class GoFishScene {
     this.save();
   }
 
+  /** Pushes back everything time-based by `ms` (the lobby's zoom-in), so the game starts when it lands. */
+  postpone(ms) {
+    const now = performance.now();
+    const t = this.table;
+    for (const sp of [...t.hand, ...t.played, ...this.cpu]) if (sp.waitUntil > now) sp.waitUntil += ms;
+    // Hold the event queue too; an empty queue gets a pause so a CPU turn can't start early.
+    if (this.queue.length) for (const q of this.queue) q.at = Math.max(q.at, now) + ms;
+    else this.queue.push({ at: now + ms, fn: () => {} });
+  }
+
   cancel() {
     this.input.cancel();
   }

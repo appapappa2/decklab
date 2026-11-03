@@ -439,6 +439,14 @@ export class EightsScene {
     this.save();
   }
 
+  /** Pushes back everything time-based by `ms` (the lobby's zoom-in), so the game starts when it lands. */
+  postpone(ms) {
+    const now = performance.now();
+    const t = this.table;
+    for (const sp of [...t.hand, ...t.played, ...this.cpu]) if (sp.waitUntil > now) sp.waitUntil += ms;
+    this.cpuAt = Math.max(this.cpuAt, now) + ms;
+  }
+
   cancel() {
     this.input.cancel();
   }

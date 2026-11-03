@@ -60,7 +60,7 @@ export function shuffle(arr) {
   return arr;
 }
 
-function faceHTML(card) {
+export function faceHTML(card) {
   const mark = suitHTML(card.suit.id);
   const corner = `<b${card.rank === '10' ? ' class="rank-ten"' : ''}>${card.rank}</b>${mark}`;
   const court = card.value >= 11;
