@@ -6,8 +6,8 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=euchre';
-import { playIntro } from './intro.js?v=euchre';
+import { initLobby } from './lobby.js?v=poker';
+import { playIntro } from './intro.js?v=poker';
 import { SolitaireScene } from './solitaire/scene.js?v=rummy';
 import { WarScene } from './war/scene.js?v=rummy';
 import { EightsScene } from './eights/scene.js?v=rummy';
@@ -22,6 +22,7 @@ import { BeggarScene } from './beggar/scene.js?v=beggar';
 import { CribbageScene } from './cribbage/scene.js?v=cribbage';
 import { CasinoScene } from './casino/scene.js?v=casino';
 import { EuchreScene } from './euchre/scene.js?v=euchre';
+import { PokerScene } from './poker/scene.js?v=poker';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -74,6 +75,7 @@ const SCENES = {
   cribbage: { title: 'Cribbage', make: (root, opts) => new CribbageScene(root, opts) },
   casino: { title: 'Casino', make: (root, opts) => new CasinoScene(root, opts) },
   euchre: { title: 'Euchre', make: (root, opts) => new EuchreScene(root, opts) },
+  poker: { title: 'Texas Hold’em', make: (root, opts) => new PokerScene(root, opts) },
 };
 const scenes = {};
 let current = null;
