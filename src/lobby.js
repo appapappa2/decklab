@@ -3,8 +3,8 @@
 //   #/dev           dev menu
 //   #/dev/hand-feel hand feel prototype (the lab)
 //   #/play/<game>   a game from GAMES that's ready in some mode
-import { GAMES, DEV_ITEMS } from './games.js?v=covers';
-import { coverHTML } from './covers.js?v=covers';
+import { GAMES, DEV_ITEMS } from './games.js?v=rummy';
+import { coverHTML } from './covers.js?v=rummy';
 import { Spring } from './spring.js';
 
 const INDEX_KEY = 'thedeck.lobby.game';
@@ -21,8 +21,11 @@ export function parseRoute(hash = location.hash) {
   if (path === 'dev') return { view: 'dev' };
   const item = DEV_ITEMS.find((d) => d.route.replace(/^#\//, '') === path);
   if (item) return { view: 'lab', id: item.id };
-  const game = GAMES.find((g) => g.ready?.length && g.route?.replace(/^#\//, '') === path);
-  if (game) return { view: 'game', id: game.id };
+  // A game route, optionally followed by /multi.
+  const multi = path.endsWith('/multi');
+  const base = multi ? path.slice(0, -'/multi'.length) : path;
+  const game = GAMES.find((g) => g.ready?.length && g.route?.replace(/^#\//, '') === base);
+  if (game && (!multi || game.ready.includes('multi'))) return { view: 'game', id: game.id, mode: multi ? 'multi' : 'single' };
   return { view: 'lobby' };
 }
 
@@ -90,7 +93,9 @@ export function initLobby(root, { onRoute }) {
   };
   const isReady = (g) => !!g.ready?.includes(modeOf(g)) && !!g.route;
   const playersText = (g) =>
-    g.cpu && modeOf(g) === 'single' ? (typeof g.cpu === 'string' ? g.cpu : 'vs CPU') : `${g.players} ${g.players === '1' ? 'player' : 'players'}`;
+    g.cpu && modeOf(g) === 'single'
+      ? (typeof g.cpu === 'string' ? g.cpu : 'vs CPU')
+      : (modeOf(g) === 'multi' && g.multiNote) || `${g.players} ${g.players === '1' ? 'player' : 'players'}`;
 
   function renderLobby() {
     const view = h('section', 'lobby-view gs');
@@ -185,7 +190,7 @@ export function initLobby(root, { onRoute }) {
       // Tell the router where the cover is, so the game can zoom out of it.
       const cover = carousel.items[carousel.index]?.querySelector('.cv');
       pendingZoom = cover ? cover.getBoundingClientRect() : null;
-      location.hash = g.route;
+      location.hash = modeOf(g) === 'multi' ? `${g.route}/multi` : g.route;
     } else showToast(`${g.name} ${modeOf(g) === 'multi' ? 'multiplayer ' : ''}is coming soon`);
   }
 

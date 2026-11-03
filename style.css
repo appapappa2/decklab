@@ -1446,6 +1446,51 @@ body.route-game .game-scene.active { display: block; }
 .bj-chip-50 { background: #c4473a; }
 .bj-chip-100 { background: #222; }
 
+/* -------------------------------------------------------------- rummy 500 */
+
+#rummy-500 {
+  --card-radius: calc(var(--cw) * .15);
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(200, 140, 40, .26) 0%, transparent 75%),
+    #1e1a10;
+}
+#rummy-500 .game-title { flex: none; white-space: nowrap; }
+.rm-stock { transform-origin: 50% 50%; }
+.rm-label, .rm-row-label, .rm-hint, .rm-actions { position: absolute; left: 0; top: 0; z-index: 3; white-space: nowrap; }
+.rm-label { pointer-events: none; text-align: center; }
+.rm-name { font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .8); }
+.rm-sub { font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, .5); font-variant-numeric: tabular-nums; }
+.rm-label.active .rm-name { color: var(--sel); }
+.rm-label.active .rm-name::before { content: '● '; font-size: 8px; vertical-align: 2px; }
+.rm-row-label { pointer-events: none; color: rgba(255, 255, 255, .45); font-size: 11px; font-weight: 700; }
+.rm-hint { pointer-events: none; color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 600; }
+.rm-actions { z-index: 5200; display: flex; gap: 6px; }
+.rm-actions .game-btn:disabled { opacity: .35; }
+.rm-toast { z-index: 5500; }
+.rm-must .front { box-shadow: 0 0 0 calc(var(--cw) * .035) #8fb7ff, 0 0 calc(var(--cw) * .16) rgba(143, 183, 255, .6); }
+.rm-count { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0 8px; }
+.rm-count-label { font-weight: 800; }
+.rm-count-opts { grid-template-columns: repeat(3, 1fr); margin: 0; border-color: rgba(255, 255, 255, .8); }
+.rm-count-opts::before { display: none; }
+.rm-count-opts .gs-toggle-btn { color: #fff; min-width: 48px; }
+.rm-count-opts .gs-toggle-btn[aria-checked="true"] { background: var(--sel); color: #2b1d00; }
+/* Pass-and-play cover: fully opaque so nobody sees the last hand. */
+.rm-handoff {
+  position: absolute;
+  inset: 0;
+  z-index: 6800;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #1e1a10;
+  text-align: center;
+}
+.rm-handoff.show { display: flex; }
+.rm-handoff-title { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+.rm-handoff-sub { margin-bottom: 14px; color: var(--muted); font-size: 15px; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

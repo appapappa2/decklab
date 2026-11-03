@@ -6,14 +6,15 @@ import { DebugOverlay } from './debug.js';
 import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=toggle';
-import { playIntro } from './intro.js?v=handoff';
-import { SolitaireScene } from './solitaire/scene.js?v=hold';
-import { WarScene } from './war/scene.js?v=hold';
-import { EightsScene } from './eights/scene.js?v=hold';
-import { GoFishScene } from './gofish/scene.js?v=hold';
-import { HeartsScene } from './hearts/scene.js?v=hold';
-import { BlackjackScene } from './blackjack/scene.js?v=hold';
+import { initLobby } from './lobby.js?v=rummy';
+import { playIntro } from './intro.js?v=rummy';
+import { SolitaireScene } from './solitaire/scene.js?v=rummy';
+import { WarScene } from './war/scene.js?v=rummy';
+import { EightsScene } from './eights/scene.js?v=rummy';
+import { GoFishScene } from './gofish/scene.js?v=rummy';
+import { HeartsScene } from './hearts/scene.js?v=rummy';
+import { BlackjackScene } from './blackjack/scene.js?v=rummy';
+import { RummyScene } from './rummy/scene.js?v=rummy';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -58,6 +59,7 @@ const SCENES = {
   'go-fish': { title: 'Go Fish', make: (root, opts) => new GoFishScene(root, opts) },
   hearts: { title: 'Hearts', make: (root, opts) => new HeartsScene(root, opts) },
   blackjack: { title: 'Blackjack', make: (root, opts) => new BlackjackScene(root, opts) },
+  'rummy-500': { title: 'Rummy 500', make: (root, opts) => new RummyScene(root, opts) },
 };
 const scenes = {};
 let current = null;
@@ -195,6 +197,7 @@ const lobbyNav = initLobby($('lobby'), {
     input.clearHover();
     if (current && current !== game) current.hide();
     current = game;
+    game?.setMode?.(route.mode);
     game?.show();
     for (const v of ['lab', 'game', 'lobby']) document.body.classList.toggle(`route-${v}`, view === v);
     document.body.classList.remove('panel-open');
