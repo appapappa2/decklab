@@ -1877,6 +1877,36 @@ body.route-game .game-scene.active { display: block; }
 .pr-you { position: absolute; left: 0; top: 0; z-index: 3; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .75); pointer-events: none; }
 #president .rm-actions .game-btn[hidden] { display: none; }
 
+/* --------------------------------------------------------------- slapjack */
+
+#slapjack {
+  background:
+    radial-gradient(ellipse 75% 50% at 50% 50%, rgba(220, 110, 60, .3) 0%, transparent 75%),
+    #22130d;
+}
+#slapjack .game-title { flex: none; white-space: nowrap; }
+#slapjack.sj-bad { animation: sd-bad .3s; }
+.sj-divider { position: absolute; left: 6%; right: 6%; height: 0; border-top: 1px dashed rgba(255, 255, 255, .14); display: none; pointer-events: none; }
+#slapjack.sj-multi .sj-divider { display: block; }
+.sj-jack .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .3) rgba(255, 210, 87, .7); }
+.sj-slap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5400;
+  font-size: 72px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  scale: 1.6;
+  transition: opacity .12s, scale .18s cubic-bezier(.3, 1.5, .5, 1);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5));
+}
+.sj-slap.show { opacity: 1; scale: 1; }
+.sj-slap.bad { filter: drop-shadow(0 0 12px rgba(255, 80, 70, .9)); }
+.sj-banner.bad { color: #ff9a8f; }
+.sj-hint.slap { color: var(--sel) !important; font-size: 18px; font-weight: 900; animation: none; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }
