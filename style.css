@@ -1596,6 +1596,20 @@ body.route-game .game-scene.active { display: block; }
 .sd-banner.go { background: var(--sel); color: #2b1d00; font-size: 34px; font-weight: 900; }
 .sd-banner.info { color: var(--muted); font-size: 15px; }
 
+/* ---------------------------------------------------- beggar-my-neighbour */
+
+#beggar {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 50%, rgba(150, 80, 180, .3) 0%, transparent 75%),
+    #1c1124;
+}
+#beggar .game-title { flex: none; white-space: nowrap; }
+.bg-stats { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.bg-label { text-align: left; }
+.bg-label.right { text-align: right; }
+.bg-hint { z-index: 5000; }
+.bg-banner.court { background: var(--sel); color: #2b1d00; font-size: 16px; }
+
 /* -------------------------------------------------- real phone: fullscreen */
 
 body.mode-phone #app { display: block; }

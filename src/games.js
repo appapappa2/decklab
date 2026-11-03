@@ -17,6 +17,7 @@ export const GAMES = [
   { id: 'shithead', name: 'Shithead', blurb: "Get rid of your cards. Don't be the last one holding them.", modes: ['single', 'multi'], ready: ['single', 'multi'], players: '2–4', cpu: 'vs 1–3 CPUs', multiNote: '2–4 players · pass and play', route: '#/play/shithead', tag: '2 resets · 10 burns', colors: ['#7b4a2a', '#e8a46a', '#7fc8a9'] },
   { id: 'spades', name: 'Spades', blurb: 'Bid your tricks with a partner. Spades are trump.', modes: ['single', 'multi'], ready: ['single', 'multi'], players: '4', cpu: 'with a CPU partner', multiNote: '2–4 players · pass and play', route: '#/play/spades', tag: 'Make your bid, dodge the bags', colors: ['#24304a', '#7d93c8', '#e0b95a'] },
   { id: 'speed', name: 'Speed', blurb: 'No turns: race the CPU, one up or one down.', modes: ['single'], ready: ['single'], players: '2', cpu: 'vs CPU · real time', route: '#/play/speed', tag: 'Also known as Stress', colors: ['#c2272d', '#ff7a45', '#ffd257'] },
+  { id: 'beggar', name: 'Beggar-my-neighbour', blurb: 'Flip and pay up for every court card. Take the pile.', modes: ['single', 'multi'], ready: ['single', 'multi'], players: '2–4', cpu: 'vs 1–3 CPUs', multiNote: '2–4 players · one device', route: '#/play/beggar', tag: 'Aces cost four', colors: ['#5b2a6e', '#c58ae0', '#f2b84b'] },
   { id: 'hearts', name: 'Hearts', blurb: 'Avoid hearts and the queen of spades.', modes: ['single', 'multi'], ready: ['single'], players: '4', cpu: 'vs 3 CPUs', route: '#/play/hearts', tag: 'Dodge the queen', colors: ['#e5578a', '#ff8fb8', '#b07dff'] },
 ];
 
