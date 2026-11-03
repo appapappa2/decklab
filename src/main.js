@@ -7,6 +7,7 @@ import { cardBackHTML } from './cards.js?v=landing-burst';
 import { SparkleTrail } from './sparkles.js?v=landing-burst';
 import { LandingRipples } from './ripples.js?v=water-ripple';
 import { initLobby } from './lobby.js?v=toggle';
+import { playIntro } from './intro.js?v=handoff';
 import { SolitaireScene } from './solitaire/scene.js?v=hold';
 import { WarScene } from './war/scene.js?v=hold';
 import { EightsScene } from './eights/scene.js?v=hold';
@@ -274,6 +275,8 @@ function zoomGame(sceneEl, rect, dir) {
 
 // Boot
 device.measure();
+// Starting on the lobby: play the intro over it first.
+if (lobbyNav.route.view === 'lobby') playIntro($('screen'), { lobby: $('lobby') });
 debug.setEnabled(settings.debug);
 game.newGame(7);
 requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('booting')));
