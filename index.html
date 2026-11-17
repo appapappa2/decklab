@@ -18,6 +18,16 @@
 </head>
 <body class="booting route-lobby">
   <div id="app">
+    <header id="devboard-bar">
+      <div class="db-title">Devboard</div>
+      <nav class="db-tabs" role="tablist" aria-label="Devboard">
+        <button type="button" role="tab" data-tab="game" aria-controls="pane-game">Game</button>
+        <button type="button" role="tab" data-tab="animations" aria-controls="pane-animations">Animations</button>
+        <button type="button" role="tab" data-tab="sounds" aria-controls="pane-sounds">Sounds</button>
+      </nav>
+    </header>
+    <div id="devboard-body">
+    <section id="pane-game" class="db-pane" role="tabpanel" data-tab="game">
     <main id="stage">
       <div id="device-fit">
         <div id="device-scale">
@@ -89,8 +99,26 @@
       </details>
       <div id="panel-body"></div>
     </aside>
+    </section>
+
+    <section id="pane-animations" class="db-pane" role="tabpanel" data-tab="animations">
+      <div class="db-stage">
+        <div class="db-phone-fit">
+          <div class="db-phone">
+            <div class="db-phone-screen">
+              <iframe id="anim-frame" title="Stress, frozen" tabindex="-1"></iframe>
+            </div>
+          </div>
+        </div>
+        <div class="db-phone-label">iPhone 15 · Portrait · 393×852</div>
+      </div>
+    </section>
+
+    <section id="pane-sounds" class="db-pane" role="tabpanel" data-tab="sounds"></section>
+    </div>
   </div>
   <div id="safe-probe"></div>
+  <script type="module" src="src/devboard.js"></script>
   <script type="module" src="src/main.js?v=fourcolor"></script>
 </body>
 </html>

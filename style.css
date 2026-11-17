@@ -30,7 +30,87 @@ body { touch-action: manipulation; }
 button { font: inherit; color: inherit; cursor: pointer; }
 body.booting *, body.booting *::before, body.booting *::after { transition: none !important; }
 
-#app { display: flex; width: 100%; height: 100%; }
+#app { display: flex; flex-direction: column; width: 100%; height: 100%; }
+
+/* --------------------------------------------------------------- devboard */
+
+/* The desktop shell: a bar of tabs on top, one pane per tab under it.
+   devboard.js adds body.devboard on desktop only; a real phone gets just the game. */
+#devboard-bar { display: none; }
+body.devboard #devboard-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 52px;
+  padding: 0 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.db-title { font-weight: 700; font-size: 15px; letter-spacing: .01em; }
+.db-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid #2c323b; border-radius: 999px; background: #171b21; }
+.db-tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+.db-tabs button:hover { color: var(--text); }
+.db-tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); }
+
+#devboard-body { flex: 1; min-height: 0; display: flex; }
+.db-pane { flex: 1; min-width: 0; display: flex; }
+.db-pane[hidden] { display: none; }
+body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
+
+/* Animations: a phone frame of its own, scaled to fit by devboard.js, with the
+   effects board (#fx-board) beside it. */
+.db-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: radial-gradient(1200px 800px at 50% 40%, #1a1f27 0%, var(--bg) 70%);
+}
+.db-phone-fit { position: relative; flex: none; }
+.db-phone {
+  --bezel: 14px;
+  --radius: 55px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(393px + var(--bezel) * 2);
+  height: calc(852px + var(--bezel) * 2);
+  padding: var(--bezel);
+  border-radius: calc(var(--radius) + var(--bezel));
+  background: #050506;
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 0 0 1.5px #4b5058,
+    0 0 0 5px #23262b,
+    0 0 0 6px #3c4047,
+    0 50px 100px -20px rgba(0, 0, 0, .7),
+    0 30px 60px -30px rgba(0, 0, 0, .8);
+}
+.db-phone-screen {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #F5EFE3;
+}
+:root[data-theme="ink"] .db-phone-screen { background: #17140F; }
+/* The frozen Stress table: this page again, embedded (?embed=stress). Look, don't touch. */
+#anim-frame { display: block; width: 100%; height: 100%; border: 0; pointer-events: none; }
+.db-phone-label { color: var(--muted); font-size: 12px; }
 
 /* ------------------------------------------------------------ stage/frame */
 
@@ -278,8 +358,7 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
 .statusbar .battery::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: color-mix(in srgb, currentColor 55%, transparent); }
 #device.landscape .statusbar { display: none; }
 
-/* The effects board: a column of buttons to the right of the phone. */
-#stage { position: relative; }
+/* The effects board: a column of buttons to the right of the Animations phone (devboard). */
 #fx-board {
   position: absolute;
   right: 10px;
@@ -314,8 +393,8 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
 }
 .fxb-btn:hover { background: #1f242c; }
 .fxb-btn:active { transform: scale(.96); background: #262c35; }
-/* It needs room beside the phone, and it has no place on a real phone or next to the lab's own panel. */
-body.mode-phone #fx-board, body.route-lab #fx-board { display: none; }
+/* It needs room beside the phone, and it has no place on a real phone. */
+body.mode-phone #fx-board { display: none; }
 @media (max-width: 640px) { #fx-board { display: none; } }
 #device-bar { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; }
 #device-bar button {
@@ -2256,7 +2335,9 @@ body.route-game .game-scene.active { display: block; }
 
 /* -------------------------------------------------- real phone: fullscreen */
 
-body.mode-phone #app { display: block; }
+body.mode-phone #app,
+body.mode-phone #devboard-body,
+body.mode-phone #pane-game { display: block; }
 body.mode-phone #stage { position: fixed; inset: 0; display: block; background: #000; }
 body.mode-phone #device-fit,
 body.mode-phone #device-scale,
@@ -2286,6 +2367,10 @@ body.mode-phone .island,
 body.mode-phone .home-indicator,
 body.mode-phone .statusbar,
 body.mode-phone #device-bar { display: none; }
+/* Embedded in the devboard's phone frame: the frame's safe areas, island and status bar. */
+body.embed #screen { --safe-top: 59px; --safe-right: 0px; --safe-bottom: 34px; --safe-left: 0px; }
+body.embed .island, body.embed .home-indicator { display: block; }
+body.embed .statusbar { display: flex; }
 body.mode-phone input[type=range]::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -10px; }
 body.mode-phone .row { margin: 12px 0; }
 body.mode-phone .io-text { font-size: 16px; } /* < 16px makes iOS zoom on focus */

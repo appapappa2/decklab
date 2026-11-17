@@ -13,7 +13,12 @@ python3 serve.py        # optional port: python3 serve.py 8800
 
 Use `serve.py` rather than `python3 -m http.server`. The stock server only queues 5 connections, so the browser's parallel module requests sometimes get reset and the app silently never boots. `serve.py` also disables caching so edits show up on a normal reload.
 
-- **Desktop:** open <http://localhost:8000>. You get an emulated iPhone 15 frame (393×852) with the lab panel on the right.
+- **Desktop:** open <http://localhost:8000>. You get the **devboard**: a bar of tabs on top, with the page under it.
+  - **Game:** an emulated iPhone 15 frame (393×852) running the app, with the lab panel on the right in the hand feel prototype.
+  - **Animations:** a second phone showing a Stress table that deals and then holds still (not playable), with the **effects board** beside it.
+  - **Sounds:** an empty space for sound tests.
+
+  The devboard remembers the last tab; `?tab=game`, `?tab=animations` or `?tab=sounds` opens one directly. Keyboard shortcuts only reach the game while the Game tab is showing.
 - **iPhone:** make sure the phone and computer are on the same Wi‑Fi. Find your Mac's IP with `ipconfig getifaddr en0`, then open `http://<ip>:8000` in Safari. It runs fullscreen and follows real orientation changes. For a true fullscreen experience, use Share → *Add to Home Screen*.
 - **Force a mode:** add `?mode=phone` or `?mode=desktop`.
 
@@ -23,7 +28,7 @@ The **lobby** is a game select carousel: each game is a playing-card shaped cove
 
 Your avatar sits top left in the lobby with your **rank** in a small badge on its corner. Tapping it opens your profile (`src/profile.js`): the avatar, your rank, the objective that leads to the next one with a progress bar ("Win every game once"), and a row to change the avatar (one of the four suits, or an uploaded picture; until you choose, it says "You"). It is a mockup: the rank and the progress are made-up numbers and nothing is counted yet; only the avatar choice is real and remembered on the device.
 
-To the right of the phone sits the **effects board** (`src/fxboard.js`): a button for every effect in `src/fx.js`. The first group is what the games already trigger on their own (sparks, the big burst, shake, a score popping with its "+N", the your-turn glow, confetti, the card curtain, the countdown). The second is bigger moments that nothing triggers yet: win, lose, fireworks, a fountain of coins, a rain of suits, a flash, a climbing combo stamp, and a rank up. The board hides on a real phone, in the lab, and when the window is too narrow.
+In the devboard's **Animations** tab, to the right of the phone, sits the **effects board** (`src/fxboard.js`): a button for every effect in `src/fx.js`, played on a frozen Stress table. That table is the app itself in an iframe (`index.html?embed=stress#/play/stress`): `main.js` deals it, skips the countdown, lets the middle piles turn over and then stops updating it, the CPU never moves, and the iframe takes no pointer input. The first group is what the games already trigger on their own (sparks, the big burst, shake, a score popping with its "+N", the your-turn glow, confetti, the card curtain, the countdown). The second is bigger moments that nothing triggers yet: win, lose, fireworks, a fountain of coins, a rain of suits, a flash, a climbing combo stamp, and a rank up. The board hides on a real phone and when the window is too narrow.
 
 Inside a game every table uses the same **HUD** (`src/hud.js`): the opponents' round avatars sit top left with their line of detail, the **… menu** top right (`src/gamemenu.js`: New game, each game's options, Exit), and your "You" avatar bottom right just above your hand. Everything the game has to say (whose turn it is, scores, hints, your own counts) is a pill that slides out of your avatar to the left; the status pill takes the game's color when it is your move, and a ring marks whose turn it is. The pills come in three weights: the status line is filled, your own numbers are an outline, and hints are the quietest. Action buttons sit right-aligned under your avatar, and every draw pile's count caption is the same size whatever size the pile is drawn at. There is no title bar. The scenes still write plain text into their own labels; `hud.js` re-homes those elements and the CSS draws the circles, so a new game gets the HUD for free. Where the row sits is one custom property per game (`--hud-b`).
 
@@ -71,6 +76,7 @@ Everything works with a mouse (Pointer Events), plus some mouse-specific behavio
 ```
 index.html      markup: device frame, screen, table, panel
 style.css       frame, felt, cards (DOM/CSS only), panel, phone fullscreen
+src/devboard.js desktop shell: Game / Animations / Sounds tabs; the Animations phone and its effects board
 src/main.js     wiring, rAF loop, panel actions, shortcuts, route switching
 src/lobby.js    lobby carousel + dev menu UI and hash routing
 src/games.js    game catalog (lobby) and dev menu entries

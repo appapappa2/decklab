@@ -8,7 +8,11 @@ const SAFE = {
 };
 const ROTATE_MS = 450;
 
+/** ?embed=<game>: the devboard's frozen copy of a table, laid out like a phone inside its frame. */
+export const EMBED = new URLSearchParams(location.search).get('embed');
+
 export function detectMode() {
+  if (EMBED) return 'phone';
   const q = new URLSearchParams(location.search).get('mode');
   if (q === 'phone' || q === 'desktop') return q;
   const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -20,13 +24,13 @@ export function initDevice({ onResize, onRotateStart }) {
   const mode = detectMode();
   const body = document.body;
   body.classList.add(`mode-${mode}`);
+  if (EMBED) body.classList.add('embed');
 
   const $ = (id) => document.getElementById(id);
   const fitEl = $('device-fit');
   const scaleEl = $('device-scale');
   const deviceEl = $('device');
   const screenEl = $('screen');
-  const panel = $('panel');
   const label = $('device-label');
   const probe = $('safe-probe');
 
@@ -41,6 +45,7 @@ export function initDevice({ onResize, onRotateStart }) {
   };
 
   const readSafeProbe = () => {
+    if (EMBED) return SAFE.portrait; // an iframe has no safe areas of its own; the frame around it does
     const cs = getComputedStyle(probe);
     return {
       top: parseFloat(cs.paddingTop) || 0,
@@ -66,10 +71,12 @@ export function initDevice({ onResize, onRotateStart }) {
     const { w, h } = dims(isL);
     const outerW = w + PHONE.bezel * 2;
     const outerH = h + PHONE.bezel * 2;
-    const overlay = updatePanelMode();
-    const panelW = overlay ? 0 : panel.offsetWidth;
-    const availW = window.innerWidth - panelW - 48;
-    const availH = window.innerHeight - 48 - 52;
+    updatePanelMode();
+    // Fit the stage (the devboard pane minus the lab panel), not the window.
+    const stage = $('stage');
+    if (!stage.clientWidth) return; // the devboard's Game tab is hidden; fit again when it shows
+    const availW = stage.clientWidth - 48;
+    const availH = stage.clientHeight - 48 - 52;
     scale = Math.max(0.25, Math.min(1, availW / outerW, availH / outerH));
     fitEl.style.width = `${outerW * scale}px`;
     fitEl.style.height = `${outerH * scale}px`;
