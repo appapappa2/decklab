@@ -1,8 +1,9 @@
 // The devboard: the desktop shell around the phone. A bar on top switches
 // between three tabs:
 //   Game        the phone running the app (lobby, games, hand feel lab)
-//   Animations  a second phone showing a frozen Stress table, with the effects
-//               board beside it; every effect plays on that table
+//   VFX/Animations  a second phone showing a frozen Stress table, with the
+//               effects board beside it: every effect plays on that table,
+//               and can be edited and saved there (fxboard.js)
 //   Sounds      the DL-1 synth and the sound bank (sounds/panel.js)
 // On a real phone (mode-phone) there is no shell: only the game shows.
 import { detectMode } from './device.js';
@@ -59,7 +60,7 @@ function loadSounds() {
 }
 
 /**
- * The Animations phone is this same page in an iframe (?embed=stress): a Stress
+ * The VFX/Animations phone is this same page in an iframe (?embed=stress): a Stress
  * table that deals and then holds still (main.js). Loaded the first time the
  * tab opens; the effects board then drives that page's fx.
  */
@@ -72,7 +73,8 @@ function loadAnimationTable() {
       const w = frame.contentWindow;
       const screen = frame.contentDocument?.getElementById('screen');
       if (!w?.lab?.fx || !screen) return;
-      initFxBoard(animStage, screen, w.lab.fx, { transition: w.lab.playTransition });
+      // Saved effects also go to the real game in the Game tab.
+      initFxBoard(animStage, w.lab.fx, { also: [window.lab?.fx] });
     },
     { once: true },
   );
@@ -111,7 +113,7 @@ window.addEventListener('blur', () => {
   if (tab === 'sounds') sounds?.show();
 });
 
-/** Scale the Animations tab's phone frame to fit its pane, like the game's. */
+/** Scale the VFX/Animations tab's phone frame to fit its pane, like the game's. */
 const animStage = document.querySelector('#pane-animations .db-stage');
 const animFit = document.querySelector('#pane-animations .db-phone-fit');
 const animPhone = document.querySelector('#pane-animations .db-phone');

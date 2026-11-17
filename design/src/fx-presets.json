@@ -1,0 +1,334 @@
+[
+  {
+    "id": "sparks",
+    "name": "Sparks",
+    "group": "game",
+    "layers": [
+      {
+        "type": "burst",
+        "delay": 0,
+        "count": 16,
+        "speed": 320,
+        "big": false,
+        "x": 0.5,
+        "y": 0.44
+      }
+    ]
+  },
+  {
+    "id": "big-burst",
+    "name": "Big burst",
+    "group": "game",
+    "layers": [
+      {
+        "type": "burst",
+        "delay": 0,
+        "count": 22,
+        "speed": 420,
+        "big": true,
+        "x": 0.5,
+        "y": 0.44
+      },
+      {
+        "type": "shake",
+        "delay": 0,
+        "px": 7
+      }
+    ]
+  },
+  {
+    "id": "shake",
+    "name": "Shake",
+    "group": "game",
+    "layers": [
+      {
+        "type": "shake",
+        "delay": 0,
+        "px": 6
+      }
+    ]
+  },
+  {
+    "id": "score",
+    "name": "Score +3",
+    "group": "game",
+    "layers": [
+      {
+        "type": "score",
+        "delay": 0,
+        "n": 3
+      }
+    ]
+  },
+  {
+    "id": "turn",
+    "name": "Your turn",
+    "group": "game",
+    "layers": [
+      {
+        "type": "glow",
+        "delay": 0
+      }
+    ]
+  },
+  {
+    "id": "confetti",
+    "name": "Confetti",
+    "group": "game",
+    "layers": [
+      {
+        "type": "confetti",
+        "delay": 0,
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "curtain",
+    "name": "Card curtain",
+    "group": "game",
+    "layers": [
+      {
+        "type": "curtain",
+        "delay": 0
+      }
+    ]
+  },
+  {
+    "id": "countdown",
+    "name": "Countdown",
+    "group": "game",
+    "layers": [
+      {
+        "type": "stamp",
+        "delay": 0,
+        "text": "3",
+        "color": "red",
+        "round": true,
+        "tilt": 0,
+        "ms": 760,
+        "y": 0.44
+      },
+      {
+        "type": "stamp",
+        "delay": 800,
+        "text": "2",
+        "color": "yellow",
+        "round": true,
+        "tilt": 0,
+        "ms": 760,
+        "y": 0.44
+      },
+      {
+        "type": "stamp",
+        "delay": 1600,
+        "text": "1",
+        "color": "green",
+        "round": true,
+        "tilt": 0,
+        "ms": 760,
+        "y": 0.44
+      },
+      {
+        "type": "stamp",
+        "delay": 2400,
+        "text": "Go!",
+        "color": "blue",
+        "round": true,
+        "tilt": 0,
+        "ms": 700,
+        "y": 0.44
+      }
+    ]
+  },
+  {
+    "id": "win",
+    "name": "Win",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "flash",
+        "delay": 0,
+        "color": "yellow",
+        "peak": 0.45,
+        "ms": 420,
+        "hold": 0
+      },
+      {
+        "type": "stamp",
+        "delay": 0,
+        "text": "You win!",
+        "color": "yellow",
+        "round": false,
+        "tilt": -4,
+        "ms": 1700,
+        "y": 0.44
+      },
+      {
+        "type": "confetti",
+        "delay": 0,
+        "amount": 1
+      },
+      {
+        "type": "fireworks",
+        "delay": 260,
+        "count": 5
+      }
+    ]
+  },
+  {
+    "id": "lose",
+    "name": "Lose",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "flash",
+        "delay": 0,
+        "color": "ink",
+        "peak": 0.5,
+        "ms": 700,
+        "hold": 900
+      },
+      {
+        "type": "shake",
+        "delay": 0,
+        "px": 7
+      },
+      {
+        "type": "stamp",
+        "delay": 0,
+        "text": "You lose",
+        "color": "ink",
+        "round": false,
+        "tilt": 3,
+        "ms": 1700,
+        "y": 0.44
+      },
+      {
+        "type": "ash",
+        "delay": 0,
+        "count": 26
+      }
+    ]
+  },
+  {
+    "id": "fireworks",
+    "name": "Fireworks",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "fireworks",
+        "delay": 0,
+        "count": 6
+      }
+    ]
+  },
+  {
+    "id": "coins",
+    "name": "Coins",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "coins",
+        "delay": 0,
+        "count": 34
+      }
+    ]
+  },
+  {
+    "id": "suits",
+    "name": "Suit rain",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "suits",
+        "delay": 0,
+        "count": 40
+      }
+    ]
+  },
+  {
+    "id": "flash",
+    "name": "Flash",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "flash",
+        "delay": 0,
+        "color": "white",
+        "peak": 0.7,
+        "ms": 420,
+        "hold": 0
+      }
+    ]
+  },
+  {
+    "id": "combo",
+    "name": "Combo",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "stamp",
+        "delay": 0,
+        "text": "x3",
+        "color": "blue",
+        "round": true,
+        "tilt": -10,
+        "ms": 800,
+        "y": 0.44
+      },
+      {
+        "type": "burst",
+        "delay": 0,
+        "count": 21,
+        "speed": 390,
+        "big": true,
+        "x": 0.5,
+        "y": 0.44
+      }
+    ]
+  },
+  {
+    "id": "rank-up",
+    "name": "Rank up",
+    "group": "moment",
+    "layers": [
+      {
+        "type": "rings",
+        "delay": 0,
+        "count": 3,
+        "x": 0.5,
+        "y": 0.44
+      },
+      {
+        "type": "stamp",
+        "delay": 0,
+        "text": "2",
+        "color": "ink",
+        "round": true,
+        "tilt": 0,
+        "ms": 1500,
+        "y": 0.44
+      },
+      {
+        "type": "stamp",
+        "delay": 120,
+        "text": "Rank up",
+        "color": "yellow",
+        "round": false,
+        "tilt": -4,
+        "ms": 1380,
+        "y": 0.6
+      },
+      {
+        "type": "burst",
+        "delay": 200,
+        "count": 26,
+        "speed": 460,
+        "big": true,
+        "x": 0.5,
+        "y": 0.44
+      }
+    ]
+  }
+]
