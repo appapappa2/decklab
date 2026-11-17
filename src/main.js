@@ -13,6 +13,7 @@ import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
 import { installGameMenu } from './gamemenu.js?v=fourcolor';
 import { initHud } from './hud.js?v=fourcolor';
 import { initFx } from './fx.js?v=fourcolor';
+import { initFxBoard } from './fxboard.js?v=fourcolor';
 import { playIntro } from './intro.js?v=fourcolor';
 import { SolitaireScene } from './solitaire/scene.js?v=fourcolor';
 import { WarScene } from './war/scene.js?v=fourcolor';
@@ -172,6 +173,8 @@ document.addEventListener(
 window.lab = { game, input, settings, device, sparkles, ripples };
 // Confetti, bursts, shakes and score pops for every game (fx.js).
 window.lab.fx = initFx(screenEl);
+// A button for each of them, next to the phone (fxboard.js).
+initFxBoard($('stage'), screenEl, window.lab.fx);
 // Avatars, the opponents' corner and the pills by your hand (hud.js).
 initHud(screenEl);
 

@@ -13,12 +13,20 @@
 // Smaller, purely visual touches (a winning hand hopping, a name popping when
 // its turn starts) live in style.css under "game feel".
 // Everything is skipped under prefers-reduced-motion.
+//
+// On top of those there is a set of bigger moments that nothing triggers yet
+// (win, lose, fireworks, coins, a rain of suits, a flash, a combo stamp, a rank
+// up, a countdown). They are all returned by initFx, and the effects board next
+// to the phone (fxboard.js) has a button for each.
+import { SUIT_ART } from './cards.js?v=fourcolor';
 
 const COLORS = ['#F0442E', '#FFC42E', '#149A6A', '#2B62F0'];
 const SCORES = '.war-count, .rm-sub, .bj-bank, .cs-score, .gn-score';
 const BANNERS = '.war-banner, .bj-banner, .sd-banner';
 const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const rand = (a, b) => a + Math.random() * (b - a);
+const INK = '#17140F';
+const SUIT_PATHS = typeof Path2D === 'undefined' ? [] : Object.values(SUIT_ART).map((a) => new Path2D(a.shape));
 
 export function initFx(screen) {
   const canvas = document.createElement('canvas');
@@ -90,6 +98,20 @@ export function initFx(screen) {
           ctx.beginPath();
           ctx.arc(0, 0, (p.w / 2) * (1 - t * 0.5), 0, Math.PI * 2);
           ctx.fill();
+        } else if (p.kind === 'coin') {
+          // A coin spins on its upright axis: a disc that narrows to an edge and back.
+          ctx.scale(Math.max(0.18, Math.abs(Math.cos(p.age * p.tumble))), 1);
+          ctx.beginPath();
+          ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#C98F00';
+          ctx.stroke();
+        } else if (p.kind === 'suit') {
+          // The suit shapes are drawn in a 100 x 100 box.
+          ctx.scale(p.w / 100, p.w / 100);
+          ctx.translate(-50, -50);
+          ctx.fill(p.path);
         } else ctx.fillRect((-p.w / 2) * flip, -p.h / 2, p.w * flip, p.h);
         ctx.restore();
       }
@@ -207,6 +229,165 @@ export function initFx(screen) {
   }
 
   const scene = () => screen.querySelector('.game-scene.active');
+
+  // ------------------------------------------------------- bigger moments
+
+  /** Whatever is on screen right now: the table, or the lobby. */
+  const stageEl = () => scene() ?? screen.querySelector('#lobby');
+  const later = (ms, fn) => setTimeout(fn, ms);
+
+  /** A sheet of color over the whole screen that fades away (or, with `hold`, lingers first). */
+  function flash(color = '#FFFDF7', { peak = 0.7, ms = 420, hold = 0 } = {}) {
+    if (reduced?.matches) return;
+    const el = document.createElement('div');
+    el.className = 'fx-veil';
+    el.style.background = color;
+    screen.append(el);
+    const total = ms + hold;
+    el.animate(
+      [{ opacity: 0 }, { opacity: peak, offset: Math.min(0.2, 60 / total) }, { opacity: peak, offset: (60 + hold) / total }, { opacity: 0 }],
+      { duration: total, easing: 'ease-out' },
+    ).finished.then(() => el.remove(), () => el.remove());
+  }
+
+  /** The "your turn" glow, from the bottom edge, anywhere (the tables use a class for it). */
+  function glow() {
+    if (reduced?.matches) return;
+    const el = document.createElement('div');
+    el.className = 'fx-glow';
+    screen.append(el);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+    later(1200, () => el.remove());
+  }
+
+  /**
+   * A sticker that slams onto the middle of the screen, sits, and lets go.
+   * `round` makes it a circle (for a single number); `tilt` in degrees. By default it
+   * is the text color on the backdrop, so it stands out on paper and on ink alike.
+   */
+  function stamp(text, { bg = 'var(--fg)', fg = 'var(--base)', round = false, tilt = -4, ms = 1100, y = 0.44 } = {}) {
+    const el = document.createElement('div');
+    el.className = `fx-stamp${round ? ' round' : ''}`;
+    el.textContent = text;
+    el.style.background = bg;
+    el.style.color = fg;
+    el.style.top = `${y * 100}%`;
+    screen.append(el);
+    if (reduced?.matches) {
+      later(ms, () => el.remove());
+      return el;
+    }
+    const inAt = Math.min(0.3, 260 / ms);
+    const outAt = Math.max(inAt + 0.05, 1 - 200 / ms);
+    el.animate(
+      [
+        { scale: 2.2, rotate: `${tilt * 3}deg`, opacity: 0 },
+        { scale: 0.92, rotate: `${tilt}deg`, opacity: 1, offset: inAt * 0.6 },
+        { scale: 1, rotate: `${tilt}deg`, opacity: 1, offset: inAt },
+        { scale: 1, rotate: `${tilt}deg`, opacity: 1, offset: outAt },
+        { scale: 0.7, rotate: `${tilt}deg`, opacity: 0 },
+      ],
+      { duration: ms, easing: 'cubic-bezier(.3, 1.3, .5, 1)' },
+    ).finished.then(() => el.remove(), () => el.remove());
+    return el;
+  }
+
+  /** A score going up, on any element: the pop and the "+N" that floats off it. */
+  function score(el, n = 1) {
+    if (!el) return;
+    pop(el, 'fx-up');
+    floater(el, `+${n}`);
+  }
+
+  /** Rockets: a handful of bursts across the upper half, one after another. */
+  function fireworks(count = 6) {
+    size();
+    for (let i = 0; i < count; i++) {
+      later(i * 170 + rand(0, 90), () => {
+        const c = COLORS[(Math.random() * 4) | 0];
+        burst(rand(W * 0.15, W * 0.85), rand(H * 0.14, H * 0.5), { count: 20, speed: rand(300, 420), big: true, ring: c });
+      });
+    }
+  }
+
+  /** A fountain of coins from the bottom of the screen. */
+  function coins(count = 34) {
+    size();
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      const a = rand(-2.0, -1.14); // up, fanning out
+      const v = rand(620, 1080);
+      list.push({
+        kind: 'coin', x: W / 2 + rand(-30, 30), y: H + 16, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 1500, drag: 0.35,
+        rot: 0, vr: 0, tumble: rand(8, 16), w: rand(15, 22), h: 0, color: '#FFC42E', age: -rand(0, 0.5), life: rand(1.5, 2.1),
+      });
+    }
+    add(list);
+  }
+
+  /** The four suits falling through the screen, each in its own color. */
+  function suits(count = 40) {
+    size();
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      const k = i % 4;
+      list.push({
+        kind: 'suit', path: SUIT_PATHS[k], x: rand(0, W), y: rand(-80, -20), vx: rand(-30, 30), vy: rand(120, 300), g: 260, drag: 0.5,
+        rot: rand(-0.5, 0.5), vr: rand(-2.4, 2.4), w: rand(18, 34), h: 0, color: [COLORS[3], COLORS[0], COLORS[2], COLORS[1]][k], age: -rand(0, 1.1), life: rand(2.4, 3.4),
+      });
+    }
+    add(list);
+  }
+
+  /** You won: light, a sticker, the confetti, and rockets behind it. */
+  function win() {
+    flash('#FFC42E', { peak: 0.45 });
+    stamp('You win!', { bg: '#FFC42E', fg: INK, ms: 1700 });
+    confetti();
+    later(260, () => fireworks(5));
+  }
+
+  /** You lost: the screen dims and sags, a few scraps drift down. */
+  function lose() {
+    flash(INK, { peak: 0.5, ms: 700, hold: 900 });
+    shake(stageEl(), 7);
+    stamp('You lose', { tilt: 3, ms: 1700 });
+    size();
+    const list = [];
+    for (let i = 0; i < 26; i++) {
+      list.push({
+        kind: 'paper', x: rand(0, W), y: rand(-60, -10), vx: rand(-20, 20), vy: rand(40, 110), g: 90, drag: 0.6, rot: rand(0, 6), vr: rand(-3, 3),
+        tumble: rand(3, 6), w: rand(7, 12), h: rand(4, 7), color: i % 3 ? '#8A857B' : '#5B574F', age: -rand(0, 0.9), life: rand(2.6, 3.4),
+      });
+    }
+    add(list);
+  }
+
+  /** A combo: the multiplier slams down, harder every time. */
+  function combo(n = 2) {
+    size();
+    const c = COLORS[n % 4];
+    stamp(`x${n}`, { bg: c, fg: c === COLORS[1] ? INK : '#FFFDF7', round: true, tilt: -10, ms: 800 });
+    burst(W / 2, H * 0.44, { count: Math.min(30, 12 + n * 3), speed: 300 + n * 30, big: n > 2, ring: c });
+    if (n > 3) shake(stageEl(), Math.min(10, n + 2));
+  }
+
+  /** A new rank: rings open from the middle, the number lands, sparks go up. */
+  function rankUp(rank = 2) {
+    size();
+    const x = W / 2;
+    const y = H * 0.44;
+    add([0, 0.12, 0.24].map((d, i) => ({ kind: 'ring', x, y, r0: 20, r1: 150 + i * 50, w: 8, color: COLORS[(i + 1) % 4], age: -d, life: 0.7 })));
+    stamp(String(rank), { round: true, tilt: 0, ms: 1500 });
+    later(120, () => stamp('Rank up', { bg: COLORS[1], fg: INK, tilt: -4, ms: 1380, y: 0.6 }));
+    later(200, () => burst(x, y, { count: 26, speed: 460, big: true, ring: COLORS[1] }));
+  }
+
+  /** 3, 2, 1, Go: each in a circle, each in the next color. */
+  function countdown() {
+    const steps = [['3', COLORS[0], '#FFFDF7'], ['2', COLORS[1], INK], ['1', COLORS[2], '#FFFDF7'], ['Go!', COLORS[3], '#FFFDF7']];
+    steps.forEach(([text, bg, fg], i) => later(i * 800, () => stamp(text, { bg, fg, round: true, tilt: 0, ms: i === 3 ? 700 : 760 }).classList.toggle('word', i === 3)));
+  }
   const quiet = () => !document.body.classList.contains('route-game') || document.body.classList.contains('zooming');
   const gained = (m, cls) => m.target.classList.contains(cls) && !` ${m.oldValue ?? ''} `.includes(` ${cls} `);
 
@@ -256,5 +437,5 @@ export function initFx(screen) {
     }
   }).observe(screen, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true });
 
-  return { burst, confetti, shake };
+  return { burst, confetti, shake, score, glow, flash, stamp, fireworks, coins, suits, win, lose, combo, rankUp, countdown, size: () => (size(), { W, H }), stage: stageEl };
 }
