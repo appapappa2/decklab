@@ -116,7 +116,7 @@ export function initFxBoard(stage, fx, { also = [] } = {}) {
   /** Replays the draft, shortly after the last change. */
   function preview(wait = 300) {
     clearTimeout(replay);
-    replay = setTimeout(() => draft && fx.run(draft.layers), wait);
+    replay = setTimeout(() => draft && fx.run(draft.layers, undefined, draft.id), wait); // with its sound, if it has one
   }
 
   function control(layer, p) {
