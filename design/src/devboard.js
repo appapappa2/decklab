@@ -4,7 +4,7 @@
 //   VFX/Animations  a second phone showing a frozen Stress table, with the
 //               effects board beside it: every effect plays on that table,
 //               and can be edited and saved there (fxboard.js)
-//   Sounds      the DL-1 synth and the sound bank (sounds/panel.js)
+//   Sounds      the DL-106 polysynth and the sound bank (sounds/panel.js)
 // On a real phone (mode-phone) there is no shell: only the game shows.
 import { detectMode } from './device.js';
 import { initFxBoard } from './fxboard.js?v=fourcolor';

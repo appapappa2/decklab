@@ -46,7 +46,7 @@ export const makeLayer = (type, over = {}) => ({
 
 const L = makeLayer;
 
-/** group: 'game' = the games trigger it themselves; 'moment' = bigger moments nothing triggers yet. */
+/** group: 'game' = the games trigger it themselves; 'moment' = bigger moments nothing triggers yet; 'reaction' = for one game or another, not wired in yet. */
 export const DEFAULTS = [
   { id: 'sparks', name: 'Sparks', group: 'game', layers: [L('burst')] },
   { id: 'big-burst', name: 'Big burst', group: 'game', layers: [L('burst', { count: 22, speed: 420, big: true }), L('shake', { px: 7 })] },
@@ -94,6 +94,23 @@ export const DEFAULTS = [
       L('burst', { count: 26, speed: 460, big: true, delay: 200 }),
     ],
   },
+  // Reactions in one game or another. `sound` names the sound to play when it
+  // isn't the one with the effect's own id (false: silent).
+  { id: 'stress', name: 'Stress!', group: 'reaction', sound: 'big-burst', layers: [L('flash', { color: 'red', peak: 0.4, ms: 320 }), L('shake', { px: 9 }), L('stamp', { text: 'Stress!', color: 'red', ms: 900 })] },
+  { id: 'war', name: 'War!', group: 'reaction', layers: [L('flash', { peak: 0.5, ms: 300 }), L('shake', { px: 8 }), L('stamp', { text: 'War!', color: 'red', tilt: -6, ms: 900 })] },
+  { id: 'slap', name: 'Slap', group: 'reaction', layers: [L('flash', { color: 'yellow', peak: 0.45, ms: 260 }), L('burst', { count: 18, speed: 420, big: true })] },
+  { id: 'sweep', name: 'Sweep', group: 'reaction', layers: [L('flash', { color: 'blue', peak: 0.3, ms: 360 }), L('stamp', { text: 'Sweep!', color: 'blue', ms: 900 })] },
+  { id: 'burn', name: 'Burn', group: 'reaction', layers: [L('flash', { color: 'yellow', peak: 0.5, ms: 500 }), L('burst', { count: 24, speed: 420, big: true }), L('ash', { count: 18, delay: 80 })] },
+  { id: 'go-fish', name: 'Go fish!', group: 'reaction', sound: 'splash', layers: [L('rings'), L('stamp', { text: 'Go fish!', color: 'blue', tilt: -6, ms: 1000 })] },
+  { id: 'meld', name: 'Meld', group: 'reaction', layers: [L('burst', { count: 8, speed: 200 })] },
+  { id: 'knock', name: 'Knock', group: 'reaction', layers: [L('shake', { px: 3 }), L('stamp', { text: 'Knock', tilt: 0, ms: 800 })] },
+  { id: 'gin', name: 'Gin!', group: 'reaction', sound: 'rank-up', layers: [L('flash', { color: 'green', peak: 0.3 }), L('stamp', { text: 'Gin!', color: 'green', ms: 1200 }), L('confetti', { amount: 0.5 })] },
+  { id: 'undercut', name: 'Undercut', group: 'reaction', sound: 'error', layers: [L('shake', { px: 5 }), L('stamp', { text: 'Undercut', color: 'red', tilt: 4, ms: 1100 })] },
+  { id: 'last-card', name: 'Last card', group: 'reaction', sound: 'alert', layers: [L('rings', { count: 1 }), L('stamp', { text: 'Last card', color: 'yellow', ms: 900 })] },
+  { id: 'suit-change', name: 'Suit change', group: 'reaction', sound: 'toast', layers: [L('rings', { count: 2 }), L('stamp', { text: '♠', round: true, tilt: 0, ms: 800 })] },
+  { id: 'tie', name: 'Tie', group: 'reaction', layers: [L('stamp', { text: 'Tie', tilt: 0, ms: 1300 })] },
+  { id: 'low-cards', name: 'Low on cards', group: 'reaction', sound: 'pulse', layers: [L('flash', { color: 'red', peak: 0.15, ms: 400 }), L('flash', { color: 'red', peak: 0.15, ms: 400, delay: 180 })] },
+  { id: 'hint', name: 'Idle hint', group: 'reaction', sound: false, layers: [L('rings', { count: 1 })] },
 ];
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -143,10 +160,10 @@ export function mergePresets(saved) {
     if (!p || typeof p.id !== 'string' || seen.has(p.id)) continue;
     seen.add(p.id);
     const def = DEFAULTS.find((d) => d.id === p.id);
-    out.push({ id: p.id, name: String(p.name ?? def?.name ?? 'Effect'), group: def?.group ?? 'custom', layers: cleanLayers(p.layers) });
+    out.push({ id: p.id, name: String(p.name ?? def?.name ?? 'Effect'), group: def?.group ?? 'custom', ...(def?.sound !== undefined && { sound: def.sound }), layers: cleanLayers(p.layers) });
   }
   for (const d of DEFAULTS) if (!seen.has(d.id)) out.push(clone(d));
-  // Keep the shipped order: game effects, then moments, then your own.
-  const rank = { game: 0, moment: 1, custom: 2 };
+  // Keep the shipped order: game effects, moments, reactions, then your own.
+  const rank = { game: 0, moment: 1, reaction: 2, custom: 3 };
   return out.sort((a, b) => rank[a.group] - rank[b.group] || DEFAULTS.findIndex((d) => d.id === a.id) - DEFAULTS.findIndex((d) => d.id === b.id));
 }

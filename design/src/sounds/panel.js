@@ -1,12 +1,15 @@
-// The devboard's Sounds tab: the DL-1 synth (synth.js) with its front panel and
-// keyboard, and under it the sound bank (library.js) as buttons.
+// The devboard's Sounds tab: the two synths, the DL-106 (synth.js, polyphonic)
+// and the DL-20 (ms20.js, monophonic), sharing one front panel and keyboard
+// (click a model name to switch), and under it the sound bank (library.js) as buttons.
 //
 // Play the synth with the mouse or the computer keyboard (A W S E D F T G Y H U
-// J K O L P ; = a bit over an octave, Z / X = octave down / up). Every sound in
-// the bank is a set of layers on the same synth: "Edit" loads a layer's patch
-// onto the panel, so it can be played and tweaked, and "Copy patch" puts the
+// J K O L P ; = a bit over an octave, Z / X = octave down / up): chords in
+// Poly, one note at a time in Mono and Unison. Every sound in
+// the bank is a set of layers, each on one of the two synths: "Edit" loads a layer's
+// patch onto the panel (switching to its synth), so it can be played and tweaked, and "Copy patch" puts the
 // panel's settings on the clipboard as JSON (paste it into library.js).
-import { DEFAULT_PATCH, makePatch, Voice, playSound, getAnalyser, setMasterVolume, audio } from './synth.js';
+import { DEFAULT_PATCH, makePatch, Synth, playSound, getAnalyser, setMasterVolume, audio } from './synth.js';
+import { MS20_DEFAULT, Ms20 } from './ms20.js';
 import { SOUNDS, GROUPS } from './library.js';
 
 const h = (tag, cls, text) => {
@@ -36,48 +39,126 @@ const fmt = {
   rate: (v) => `${v < 10 ? v.toFixed(1) : Math.round(v)}Hz`,
 };
 
-// The front panel, section by section (left to right, like the hardware).
+// The front panel, section by section, left to right in the hardware's order;
+// the last three are the extras the hardware doesn't have.
+const ON_OFF = [[true, 'On'], [false, 'Off']];
 const SECTIONS = [
-  { title: 'Modulator', color: 'blue', controls: [
-    { path: 'lfo.rate', label: 'Rate', scale: ['log', 0.1, 40], fmt: fmt.rate },
-    { path: 'lfo.wave', label: 'Wave', choices: [['tri', '∿'], ['square', '⊓'], ['random', 'S/H'], ['noise', 'Noise']] },
+  { title: 'LFO', color: 'blue', controls: [
+    { path: 'lfo.rate', label: 'Rate', scale: ['log', 0.1, 30], fmt: fmt.rate },
+    { path: 'lfo.delay', label: 'Delay', scale: ['sq', 0, 3], fmt: fmt.s },
   ] },
-  { title: 'VCO', color: 'yellow', controls: [
-    { path: 'vco.range', label: 'Range', choices: [[-1, "16'"], [0, "8'"], [1, "4'"], [2, "2'"]] },
-    { path: 'vco.mod', label: 'Mod', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'vco.pw', label: 'PW', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'vco.pwm', label: 'PWM', choices: [['man', 'Man'], ['lfo', 'LFO'], ['env', 'Env']] },
+  { title: 'DCO', color: 'yellow', controls: [
+    { path: 'dco.range', label: 'Range', choices: [[-1, "16'"], [0, "8'"], [1, "4'"]] },
+    { path: 'dco.lfo', label: 'LFO', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'dco.pwm', label: 'PWM', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'dco.pwmMode', label: 'PWM by', choices: [['lfo', 'LFO'], ['man', 'Man']] },
+    { path: 'dco.pulse', label: 'Pulse ⊓', choices: ON_OFF },
+    { path: 'dco.saw', label: 'Saw ◿', choices: ON_OFF },
+    { path: 'dco.sub', label: 'Sub', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'dco.noise', label: 'Noise', scale: ['lin', 0, 1], fmt: fmt.pct },
   ] },
-  { title: 'Source mixer', color: 'green', controls: [
-    { path: 'mix.pulse', label: 'Pulse', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'mix.saw', label: 'Saw', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'mix.sub', label: 'Sub', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'mix.subType', label: 'Sub osc', choices: [['oct1', '-1 oct'], ['oct2', '-2 oct'], ['pulse2', '-2 ⊓']] },
-    { path: 'mix.noise', label: 'Noise', scale: ['lin', 0, 1], fmt: fmt.pct },
+  { title: 'HPF', color: 'green', controls: [
+    { path: 'hpf', label: 'Freq', choices: [[3, '3'], [2, '2'], [1, '1'], [0, '0']] },
   ] },
   { title: 'VCF', color: 'red', controls: [
-    { path: 'vcf.freq', label: 'Freq', scale: ['log', 30, 14000], fmt: fmt.hz },
+    { path: 'vcf.freq', label: 'Freq', scale: ['log', 30, 16000], fmt: fmt.hz },
     { path: 'vcf.res', label: 'Res', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'vcf.pol', label: 'Env', choices: [[1, '+'], [-1, '−']] },
     { path: 'vcf.env', label: 'Env', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'vcf.mod', label: 'Mod', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'vcf.lfo', label: 'LFO', scale: ['lin', 0, 1], fmt: fmt.pct },
     { path: 'vcf.kybd', label: 'Kybd', scale: ['lin', 0, 1], fmt: fmt.pct },
   ] },
   { title: 'VCA', color: 'blue', controls: [
-    { path: 'vca', label: 'Mode', choices: [['env', 'Env'], ['gate', 'Gate']] },
-    { path: 'vol', label: 'Level', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'vca.mode', label: 'Mode', choices: [['env', 'Env'], ['gate', 'Gate']] },
+    { path: 'vca.level', label: 'Level', scale: ['lin', 0, 1], fmt: fmt.pct },
   ] },
   { title: 'Env', color: 'yellow', controls: [
     { path: 'env.a', label: 'A', scale: ['log', 0.001, 3], fmt: fmt.s },
-    { path: 'env.d', label: 'D', scale: ['log', 0.005, 4], fmt: fmt.s },
+    { path: 'env.d', label: 'D', scale: ['log', 0.002, 12], fmt: fmt.s },
     { path: 'env.s', label: 'S', scale: ['lin', 0, 1], fmt: fmt.pct },
-    { path: 'env.r', label: 'R', scale: ['log', 0.005, 4], fmt: fmt.s },
+    { path: 'env.r', label: 'R', scale: ['log', 0.002, 12], fmt: fmt.s },
   ] },
-  { title: 'Bend · Glide', color: 'green', controls: [
-    { path: 'bend.amt', label: 'Bend', scale: ['lin', -4800, 4800], fmt: fmt.ct },
-    { path: 'bend.time', label: 'Time', scale: ['log', 0.01, 1.5], fmt: fmt.s },
-    { path: 'glide', label: 'Glide', scale: ['sq', 0, 1], fmt: fmt.s },
+  { title: 'Chorus', color: 'green', controls: [
+    { path: 'chorus', label: 'Mode', choices: [[0, 'Off'], [1, 'I'], [2, 'II']] },
+  ] },
+  { title: 'Assign', color: 'red', controls: [
+    { path: 'assign.mode', label: 'Voices', choices: [['poly', 'Poly'], ['mono', 'Mono'], ['unison', 'Unison']] },
+    { path: 'assign.porta', label: 'Porta', scale: ['sq', 0, 2], fmt: fmt.s },
+  ] },
+  { title: 'Sweep', color: 'blue', controls: [
+    { path: 'sweep.amt', label: 'Amount', scale: ['lin', -4800, 4800], fmt: fmt.ct },
+    { path: 'sweep.time', label: 'Time', scale: ['log', 0.01, 1.5], fmt: fmt.s },
+  ] },
+  { title: 'Delay', color: 'yellow', controls: [
+    { path: 'delay.mix', label: 'Mix', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'delay.time', label: 'Time', scale: ['log', 0.03, 1.2], fmt: fmt.s },
+    { path: 'delay.fb', label: 'Fdbk', scale: ['lin', 0, 0.9], fmt: fmt.pct },
+  ] },
+  { title: 'Reverb', color: 'green', controls: [
+    { path: 'reverb.mix', label: 'Mix', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'reverb.size', label: 'Size', scale: ['log', 0.5, 5.5], fmt: fmt.s },
   ] },
 ];
+
+// The DL-20's panel, in the hardware's order: oscillators, mixer, pitch,
+// modulation generator, the two filters, the two envelopes.
+const OCT = (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}oct`;
+const SEMI = (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}st`;
+const FILTER = (k) => [
+  { path: `${k}.peak`, label: 'Peak', scale: ['lin', 0, 1], fmt: fmt.pct },
+  { path: `${k}.eg2`, label: 'EG 2', scale: ['lin', -5, 5], fmt: OCT },
+  { path: `${k}.mg`, label: 'MG', scale: ['lin', 0, 3], fmt: OCT },
+  { path: `${k}.kbd`, label: 'Kbd', scale: ['lin', 0, 1], fmt: fmt.pct },
+];
+const SECTIONS_20 = [
+  { title: 'VCO 1', color: 'yellow', controls: [
+    { path: 'vco1.wave', label: 'Wave', choices: [['tri', '△'], ['saw', '◿'], ['pulse', '⊓'], ['noise', 'Noise']] },
+    { path: 'vco1.range', label: 'Scale', choices: [[-2, "32'"], [-1, "16'"], [0, "8'"], [1, "4'"]] },
+    { path: 'vco1.pw', label: 'PW', scale: ['lin', 0.05, 0.95], fmt: fmt.pct },
+  ] },
+  { title: 'VCO 2', color: 'yellow', controls: [
+    { path: 'vco2.wave', label: 'Wave', choices: [['saw', '◿'], ['square', '⊓'], ['pulse', 'Thin'], ['ring', 'Ring']] },
+    { path: 'vco2.range', label: 'Scale', choices: [[-1, "16'"], [0, "8'"], [1, "4'"], [2, "2'"]] },
+    { path: 'vco2.pitch', label: 'Pitch', scale: ['lin', -24, 24], fmt: SEMI },
+  ] },
+  { title: 'Mixer', color: 'green', controls: [
+    { path: 'mix.vco1', label: 'VCO 1', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'mix.vco2', label: 'VCO 2', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'mix.noise', label: 'Noise', scale: ['lin', 0, 1], fmt: fmt.pct },
+  ] },
+  { title: 'Pitch', color: 'blue', controls: [
+    { path: 'porta', label: 'Porta', scale: ['sq', 0, 2], fmt: fmt.s },
+    { path: 'fm.mg', label: 'MG', scale: ['lin', 0, 12], fmt: SEMI },
+    { path: 'fm.eg1', label: 'EG 1', scale: ['lin', -24, 24], fmt: SEMI },
+    { path: 'fm.eg2', label: 'EG 2', scale: ['lin', -24, 24], fmt: SEMI },
+  ] },
+  { title: 'MG', color: 'blue', controls: [
+    { path: 'mg.rate', label: 'Rate', scale: ['log', 0.1, 30], fmt: fmt.rate },
+    { path: 'mg.wave', label: 'Wave', choices: [['tri', '△'], ['saw', '◺'], ['square', '⊓']] },
+  ] },
+  { title: 'HPF', color: 'red', controls: [{ path: 'hpf.freq', label: 'Freq', scale: ['log', 8, 8000], fmt: fmt.hz }, ...FILTER('hpf')] },
+  { title: 'LPF', color: 'red', controls: [{ path: 'lpf.freq', label: 'Freq', scale: ['log', 30, 16000], fmt: fmt.hz }, ...FILTER('lpf')] },
+  { title: 'EG 1', color: 'yellow', controls: [
+    { path: 'eg1.delay', label: 'Delay', scale: ['sq', 0, 2], fmt: fmt.s },
+    { path: 'eg1.a', label: 'A', scale: ['log', 0.001, 3], fmt: fmt.s },
+    { path: 'eg1.r', label: 'R', scale: ['log', 0.002, 6], fmt: fmt.s },
+  ] },
+  { title: 'EG 2', color: 'yellow', controls: [
+    { path: 'eg2.hold', label: 'Hold', scale: ['sq', 0, 2], fmt: fmt.s },
+    { path: 'eg2.a', label: 'A', scale: ['log', 0.001, 3], fmt: fmt.s },
+    { path: 'eg2.d', label: 'D', scale: ['log', 0.002, 6], fmt: fmt.s },
+    { path: 'eg2.s', label: 'S', scale: ['lin', 0, 1], fmt: fmt.pct },
+    { path: 'eg2.r', label: 'R', scale: ['log', 0.002, 6], fmt: fmt.s },
+  ] },
+  { title: 'VCA', color: 'green', controls: [{ path: 'vca.level', label: 'Level', scale: ['lin', 0, 1], fmt: fmt.pct }] },
+  { title: 'Reverb', color: 'green', controls: [{ path: 'reverb.mix', label: 'Mix', scale: ['lin', 0, 1], fmt: fmt.pct }] },
+];
+
+/** The two instruments the panel can show. */
+const MACHINES = {
+  dl106: { model: 'DL-106', kind: 'Polyphonic synthesizer · 6 voices', base: DEFAULT_PATCH, sections: SECTIONS, live: (p) => new Synth(p, { live: true }) },
+  dl20: { model: 'DL-20', kind: 'Monophonic synthesizer · 2 VCO · 2 VCF', base: MS20_DEFAULT, sections: SECTIONS_20, live: (p) => new Ms20(p) },
+};
 
 const KEYMAP = 'awsedftgyhujkolp;'; // C up to E an octave higher
 const FIRST = 41; // F2: the keyboard runs F2..C5 (32 keys)
@@ -85,13 +166,14 @@ const LAST = FIRST + 31;
 const BLACK = new Set([1, 3, 6, 8, 10]);
 
 export function initSounds(root) {
+  let machine = MACHINES.dl106;
   let patch = makePatch();
-  let voice = null; // the live keyboard voice, made on first use (audio needs a gesture)
+  let voice = null; // the live synth under the keyboard, made on first use (audio needs a gesture)
   let octave = 0; // computer keyboard octave shift
   let editing = null; // { sound, layer } loaded onto the panel
   const keysDown = new Map(); // computer key -> midi
 
-  const live = () => (voice ||= new Voice(patch, { live: true }));
+  const live = () => (voice ||= machine.live(patch));
   const refresh = () => voice?.apply(patch);
 
   root.classList.add('snd');
@@ -104,7 +186,23 @@ export function initSounds(root) {
 
   const top = h('div', 'snd-top');
   const brand = h('div', 'snd-brand');
-  brand.append(h('span', 'snd-model', 'DL-1'), h('span', 'snd-kind', 'Monophonic synthesizer'));
+  // The model name is the switch between the two instruments.
+  const kind = h('span', 'snd-kind', machine.kind);
+  const models = Object.entries(MACHINES).map(([key, m]) => {
+    const b = h('button', 'snd-model', m.model);
+    b.type = 'button';
+    b.title = m.kind;
+    b.addEventListener('click', () => {
+      if (machine === m) return;
+      setMachine(key);
+      editing = null;
+      status.textContent = 'Init patch';
+      markEditing();
+    });
+    brand.append(b);
+    return [m, b];
+  });
+  brand.append(kind);
   const scope = h('canvas', 'snd-scope');
   scope.width = 360;
   scope.height = 64;
@@ -133,7 +231,22 @@ export function initSounds(root) {
   const panel = h('div', 'snd-panel');
   synth.append(panel);
   const controls = []; // { c, sync() }
-  for (const sec of SECTIONS) {
+  /** Switches the panel to the other instrument (with `over` as its patch, or its init patch). */
+  function setMachine(key, over) {
+    voice?.allOff();
+    voice?.dispose?.();
+    voice = null;
+    machine = MACHINES[key];
+    patch = makePatch(over, machine.base);
+    kind.textContent = machine.kind;
+    for (const [m, b] of models) b.setAttribute('aria-pressed', String(m === machine));
+    buildPanel();
+    syncAll();
+  }
+  function buildPanel() {
+    panel.replaceChildren();
+    controls.length = 0;
+  for (const sec of machine.sections) {
     const s = h('div', `snd-sec c-${sec.color}`);
     s.append(h('div', 'snd-sec-title', sec.title));
     const row = h('div', 'snd-row');
@@ -174,7 +287,7 @@ export function initSounds(root) {
         });
         // Double-click resets to the default.
         input.addEventListener('dblclick', () => {
-          put(patch, c.path, get(DEFAULT_PATCH, c.path));
+          put(patch, c.path, get(machine.base, c.path));
           sync();
           refresh();
         });
@@ -191,10 +304,13 @@ export function initSounds(root) {
     s.append(row);
     panel.append(s);
   }
+  }
+  for (const [m, b] of models) b.setAttribute('aria-pressed', String(m === machine));
+  buildPanel();
   const syncAll = () => controls.forEach((c) => c.sync());
 
   initBtn.addEventListener('click', () => {
-    patch = makePatch();
+    patch = makePatch({}, machine.base);
     editing = null;
     status.textContent = 'Init patch';
     syncAll();
@@ -202,7 +318,7 @@ export function initSounds(root) {
     markEditing();
   });
   copyBtn.addEventListener('click', async () => {
-    const json = JSON.stringify(diff(patch, DEFAULT_PATCH));
+    const json = JSON.stringify(diff(patch, machine.base));
     try {
       await navigator.clipboard.writeText(json);
       flash(copyBtn, 'Copied');
@@ -263,7 +379,7 @@ export function initSounds(root) {
     if (mouseKey == null) return;
     const m = keyAt(e);
     if (m == null || m === mouseKey) return;
-    // Sliding across keys plays legato (glides, when the patch has glide).
+    // Sliding across keys plays legato (and glides, with portamento on).
     live().keyDown(m);
     voice.keyUp(mouseKey);
     press(mouseKey, false);
@@ -319,10 +435,13 @@ export function initSounds(root) {
     const layers = s.make();
     const i = editing?.sound === s ? (editing.layer + 1) % layers.length : 0;
     editing = { sound: s, layer: i };
-    patch = makePatch(layers[i].patch);
-    status.textContent = `${s.name} · layer ${i + 1}/${layers.length}`;
-    syncAll();
-    refresh();
+    const key = layers[i].synth === 'ms20' ? 'dl20' : 'dl106';
+    if (MACHINES[key] === machine) {
+      patch = makePatch(layers[i].patch, machine.base);
+      syncAll();
+      refresh();
+    } else setMachine(key, layers[i].patch);
+    status.textContent = `${s.name} · layer ${i + 1}/${layers.length} · ${machine.model}`;
     markEditing();
     synth.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }

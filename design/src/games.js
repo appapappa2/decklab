@@ -6,7 +6,7 @@
 //   multiNote: what the multiplayer line says instead of "N players"
 //   route:   hash route to open when the game is ready in the chosen mode
 //   tag:     short line under the title in the lobby carousel
-//   color:   the game's own color: its cover, and the table in the color backdrop
+//   color:   the game's own color: its cover and its accents on the table
 //   pop:     the partner color: the cover's sticker and card backs, highlights
 //            (both are one of 'red' | 'green' | 'blue' | 'yellow')
 export const GAMES = [

@@ -2,16 +2,14 @@
 //
 // Everything on screen is drawn in red, green, blue and yellow on a neutral
 // base. The backdrop decides what that base is:
-//   paper  warm off-white, ink text
-//   color  the selected game's own color, edge to edge
-//   ink    near-black, paper text
+//   paper  light: warm off-white, ink text
+//   ink    dark: near-black, paper text
 // The theme lives on <html data-theme>, the current game's color pair on
 // #screen (data-c / data-p); style.css derives every other token from those.
-export const THEMES = ['paper', 'color', 'ink'];
+export const THEMES = ['paper', 'ink'];
 
 const KEY = 'thedeck.theme';
-const HEX = { red: '#F0442E', yellow: '#FFC42E', green: '#149A6A', blue: '#2B62F0', ink: '#17140F', paper: '#F5EFE3' };
-let gameColor = 'green';
+const HEX = { ink: '#17140F', paper: '#F5EFE3' };
 
 export function getTheme() {
   const t = document.documentElement.dataset.theme;
@@ -20,9 +18,8 @@ export function getTheme() {
 
 /** Keeps the browser chrome (iOS status bar area, Android toolbar) in step with the backdrop. */
 function syncMeta() {
-  const t = getTheme();
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = t === 'color' ? HEX[gameColor] : HEX[t];
+  if (meta) meta.content = HEX[getTheme()];
 }
 
 export function setTheme(theme) {
@@ -47,8 +44,6 @@ export function setScreenColor(color, pop) {
   if (!screen || !color) return;
   screen.dataset.c = color;
   screen.dataset.p = pop;
-  gameColor = color;
-  syncMeta();
 }
 
 let saved = null;
