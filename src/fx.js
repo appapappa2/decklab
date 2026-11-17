@@ -14,12 +14,17 @@
 // its turn starts) live in style.css under "game feel".
 // Everything is skipped under prefers-reduced-motion.
 //
-// On top of those there is a set of bigger moments that nothing triggers yet
-// (win, lose, fireworks, coins, a rain of suits, a flash, a combo stamp, a rank
-// up, a countdown). They are all returned by initFx, and the effects board next
-// to the phone (fxboard.js) has a button for each.
+//
+// What each of those looks like is data, not code: an effect is a named list of
+// layers (fx-presets.js), and this file only knows how to draw one layer of
+// each kind and how to play a list of them. The games ask for an effect by name
+// (`play('sparks', where)`), so editing it on the VFX/Animations board next to
+// the phone (fxboard.js) changes what the games show. The same list holds
+// bigger moments that nothing triggers yet (win, lose, fireworks, coins…).
 import { SUIT_ART } from './cards.js?v=fourcolor';
 import { reducedMotion } from './motion.js';
+import { playTransition } from './transition.js?v=fourcolor';
+import { DEFAULTS } from './fx-presets.js?v=fourcolor';
 
 const COLORS = ['#F0442E', '#FFC42E', '#149A6A', '#2B62F0'];
 const SCORES = '.war-count, .rm-sub, .bj-bank, .cs-score, .gn-score';
@@ -165,20 +170,20 @@ export function initFx(screen) {
   }
 
   /** The big one: a cannon from each bottom corner, then a rain from the top. */
-  function confetti() {
+  function confetti(amount = 1) {
     size();
     const list = [];
     const paper = (x, y, vx, vy, delay, life) => ({
       kind: 'paper', x, y, vx, vy, g: 520, drag: 0.9, rot: rand(0, 6), vr: rand(-10, 10), tumble: rand(7, 15),
       w: rand(7, 12), h: rand(4, 7), color: COLORS[(Math.random() * 4) | 0], age: -delay, life,
     });
-    for (let i = 0; i < 46; i++) {
+    for (let i = 0; i < Math.round(46 * amount); i++) {
       const left = i % 2 === 0;
       const a = left ? rand(-1.35, -0.75) : rand(-2.4, -1.8); // up and inward
       const v = rand(620, 1050);
       list.push(paper(left ? -10 : W + 10, H * 0.82, Math.cos(a) * v, Math.sin(a) * v, rand(0, 0.12), rand(1.6, 2.4)));
     }
-    for (let i = 0; i < 70; i++) list.push(paper(rand(0, W), rand(-60, -10), rand(-40, 40), rand(60, 220), rand(0.25, 1.3), rand(2.2, 3.2)));
+    for (let i = 0; i < Math.round(70 * amount); i++) list.push(paper(rand(0, W), rand(-60, -10), rand(-40, 40), rand(60, 220), rand(0.25, 1.3), rand(2.2, 3.2)));
     add(list);
   }
 
@@ -340,22 +345,16 @@ export function initFx(screen) {
     add(list);
   }
 
-  /** You won: light, a sticker, the confetti, and rockets behind it. */
-  function win() {
-    flash('#FFC42E', { peak: 0.45 });
-    stamp('You win!', { bg: '#FFC42E', fg: INK, ms: 1700 });
-    confetti();
-    later(260, () => fireworks(5));
+  /** Rings opening from a point, one after another. */
+  function rings(count, x, y) {
+    add(Array.from({ length: count }, (_, i) => ({ kind: 'ring', x, y, r0: 20, r1: 150 + i * 50, w: 8, color: COLORS[(i + 1) % 4], age: -i * 0.12, life: 0.7 })));
   }
 
-  /** You lost: the screen dims and sags, a few scraps drift down. */
-  function lose() {
-    flash(INK, { peak: 0.5, ms: 700, hold: 900 });
-    shake(stageEl(), 7);
-    stamp('You lose', { tilt: 3, ms: 1700 });
+  /** Grey scraps drifting down: what is left when you lose. */
+  function ash(count = 26) {
     size();
     const list = [];
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < count; i++) {
       list.push({
         kind: 'paper', x: rand(0, W), y: rand(-60, -10), vx: rand(-20, 20), vy: rand(40, 110), g: 90, drag: 0.6, rot: rand(0, 6), vr: rand(-3, 3),
         tumble: rand(3, 6), w: rand(7, 12), h: rand(4, 7), color: i % 3 ? '#8A857B' : '#5B574F', age: -rand(0, 0.9), life: rand(2.6, 3.4),
@@ -364,31 +363,69 @@ export function initFx(screen) {
     add(list);
   }
 
-  /** A combo: the multiplier slams down, harder every time. */
-  function combo(n = 2) {
+  /** The card curtain on its own: it normally swaps the lobby and a table underneath it, here it just passes over. */
+  const curtain = () => playTransition({ screen, lobbyEl: document.createElement('div'), sceneEl: document.createElement('div'), dir: 'in' });
+
+  /** Where a score lives right now: your pill at a table, your avatar in the lobby. */
+  const scoreEl = () =>
+    [...screen.querySelectorAll('.game-scene.active .hud-mine, .game-scene.active .hud-you, .gs-you')].find((el) => el.getClientRects().length && (el.textContent || el.dataset.av));
+
+  // ------------------------------------------------------ effects as data
+
+  // Named colors a layer can ask for: [background, text on it]. "ink" follows the backdrop.
+  const NAMED = {
+    ink: ['var(--fg)', 'var(--base)'],
+    white: ['#FFFDF7', INK],
+    red: [COLORS[0], '#FFFDF7'],
+    yellow: [COLORS[1], INK],
+    green: [COLORS[2], '#FFFDF7'],
+    blue: [COLORS[3], '#FFFDF7'],
+  };
+  let presets = new Map(DEFAULTS.map((p) => [p.id, p]));
+
+  /** Draws one layer. `at` (screen px) overrides where a positioned layer goes. */
+  function layer(l, at) {
     size();
-    const c = COLORS[n % 4];
-    stamp(`x${n}`, { bg: c, fg: c === COLORS[1] ? INK : '#FFFDF7', round: true, tilt: -10, ms: 800 });
-    burst(W / 2, H * 0.44, { count: Math.min(30, 12 + n * 3), speed: 300 + n * 30, big: n > 2, ring: c });
-    if (n > 3) shake(stageEl(), Math.min(10, n + 2));
+    const x = at?.x ?? l.x * W;
+    const y = at?.y ?? l.y * H;
+    const [bg, fg] = NAMED[l.color] ?? NAMED.ink;
+    switch (l.type) {
+      case 'burst': return burst(x, y, { count: l.count, speed: l.speed, big: l.big });
+      case 'rings': return rings(l.count, x, y);
+      case 'shake': return shake(stageEl(), l.px);
+      case 'flash': return flash(bg, { peak: l.peak, ms: l.ms, hold: l.hold });
+      case 'glow': return glow();
+      case 'stamp': return stamp(l.text, { bg, fg, round: l.round, tilt: l.tilt, ms: l.ms, y: l.y }).classList.toggle('word', l.round && l.text.length > 1);
+      case 'confetti': return confetti(l.amount);
+      case 'fireworks': return fireworks(l.count);
+      case 'coins': return coins(l.count);
+      case 'suits': return suits(l.count);
+      case 'ash': return ash(l.count);
+      case 'score': return score(scoreEl(), l.n);
+      case 'curtain': return curtain();
+      default: return undefined;
+    }
   }
 
-  /** A new rank: rings open from the middle, the number lands, sparks go up. */
-  function rankUp(rank = 2) {
-    size();
-    const x = W / 2;
-    const y = H * 0.44;
-    add([0, 0.12, 0.24].map((d, i) => ({ kind: 'ring', x, y, r0: 20, r1: 150 + i * 50, w: 8, color: COLORS[(i + 1) % 4], age: -d, life: 0.7 })));
-    stamp(String(rank), { round: true, tilt: 0, ms: 1500 });
-    later(120, () => stamp('Rank up', { bg: COLORS[1], fg: INK, tilt: -4, ms: 1380, y: 0.6 }));
-    later(200, () => burst(x, y, { count: 26, speed: 460, big: true, ring: COLORS[1] }));
+  /** Plays a list of layers, each after its own delay. */
+  function run(layers, at) {
+    for (const l of layers) {
+      if (l.delay > 0) later(l.delay, () => layer(l, at));
+      else layer(l, at);
+    }
   }
 
-  /** 3, 2, 1, Go: each in a circle, each in the next color. */
-  function countdown() {
-    const steps = [['3', COLORS[0], '#FFFDF7'], ['2', COLORS[1], INK], ['1', COLORS[2], '#FFFDF7'], ['Go!', COLORS[3], '#FFFDF7']];
-    steps.forEach(([text, bg, fg], i) => later(i * 800, () => stamp(text, { bg, fg, round: true, tilt: 0, ms: i === 3 ? 700 : 760 }).classList.toggle('word', i === 3)));
+  /** Plays an effect by name. */
+  function play(id, at) {
+    const p = presets.get(id);
+    if (p) run(p.layers, at);
   }
+
+  /** Swaps in an edited set of effects (from the board, or the saved file). */
+  function setPresets(list) {
+    presets = new Map(list.map((p) => [p.id, p]));
+  }
+
   const quiet = () => !document.body.classList.contains('route-game') || document.body.classList.contains('zooming');
   const gained = (m, cls) => m.target.classList.contains(cls) && !` ${m.oldValue ?? ''} `.includes(` ${cls} `);
 
@@ -402,30 +439,25 @@ export function initFx(screen) {
         if (el.matches(BANNERS) && el.classList.contains('show') && (gained(m, 'show') || el.className !== m.oldValue)) {
           const c = center(el);
           const k = el.classList;
-          if (k.contains('war') || k.contains('go')) {
-            burst(c.x, c.y, { count: 22, speed: 420, big: true });
-            shake(scene(), 7);
-          } else if (k.contains('you') || k.contains('win')) burst(c.x, c.y, { count: 16, speed: 320, ring: COLORS[2] });
-          else if (k.contains('cpu') || k.contains('lose') || k.contains('bad')) shake(scene(), 4);
+          if (k.contains('war') || k.contains('go')) play('big-burst', c);
+          else if (k.contains('you') || k.contains('win')) play('sparks', c);
+          else if (k.contains('cpu') || k.contains('lose') || k.contains('bad')) play('shake');
         } else if (el.matches('.sj-slap') && gained(m, 'show')) {
           const c = center(el);
-          if (el.classList.contains('bad')) shake(scene(), 6);
-          else burst(c.x, c.y, { count: 18, speed: 380, big: true });
+          if (el.classList.contains('bad')) play('shake');
+          else play('big-burst', c);
         } else if (el.matches('.bj-hand-label')) {
           const c = center(el);
-          if (gained(m, 'r-blackjack')) burst(c.x, c.y, { count: 22, speed: 400, big: true });
-          else if (gained(m, 'r-win')) burst(c.x, c.y, { count: 12, speed: 260, ring: COLORS[2] });
-          else if (gained(m, 'r-bust')) shake(scene(), 5);
+          if (gained(m, 'r-blackjack')) play('big-burst', c);
+          else if (gained(m, 'r-win')) play('sparks', c);
+          else if (gained(m, 'r-bust')) play('shake');
         } else if (el.matches('.c8-status, .gf-status, .hx-status') && gained(m, 'mine')) {
-          // Your turn: a glow rises from your side of the table (style.css).
-          const s = el.closest('.game-scene');
-          s?.classList.remove('fx-turn');
-          void s?.offsetWidth;
-          s?.classList.add('fx-turn');
+          // Your turn: a glow rises from your side of the table.
+          play('turn');
         } else if (el.matches('.game-win') && gained(m, 'show')) {
           // The result card. Only a win gets the full treatment; setup cards get nothing.
           const title = el.querySelector('.game-win-title')?.textContent ?? '';
-          if (/^you (won|tied)/i.test(title)) confetti();
+          if (/^you (won|tied)/i.test(title)) play('confetti');
         }
       } else {
         // Text changed somewhere: was it a score?
@@ -438,5 +470,5 @@ export function initFx(screen) {
     }
   }).observe(screen, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true, childList: true, characterData: true, characterDataOldValue: true });
 
-  return { burst, confetti, shake, score, glow, flash, stamp, fireworks, coins, suits, win, lose, combo, rankUp, countdown, size: () => (size(), { W, H }), stage: stageEl };
+  return { play, run, setPresets, burst, confetti, shake };
 }

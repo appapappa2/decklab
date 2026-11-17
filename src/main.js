@@ -13,6 +13,7 @@ import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
 import { installGameMenu } from './gamemenu.js?v=fourcolor';
 import { initHud } from './hud.js?v=fourcolor';
 import { initFx } from './fx.js?v=fourcolor';
+import { loadPresets } from './fx-presets.js?v=fourcolor';
 import { playIntro } from './intro.js?v=fourcolor';
 import { SolitaireScene } from './solitaire/scene.js?v=fourcolor';
 import { WarScene } from './war/scene.js?v=fourcolor';
@@ -172,8 +173,10 @@ document.addEventListener(
 window.lab = { game, input, settings, device, sparkles, ripples };
 // Confetti, bursts, shakes and score pops for every game (fx.js).
 window.lab.fx = initFx(screenEl);
-// The devboard's Animations tab has a button for each of them (fxboard.js, set up
-// by devboard.js) and plays them in a frozen copy of a table: this page, embedded.
+// What each effect looks like is saved data (edited on the devboard's VFX/Animations tab).
+loadPresets().then(({ presets }) => window.lab.fx.setPresets(presets));
+// The devboard's VFX/Animations tab lists them (fxboard.js, set up by devboard.js)
+// and plays them in a frozen copy of a table: this page, embedded.
 window.lab.playTransition = playTransition;
 // Avatars, the opponents' corner and the pills by your hand (hud.js).
 initHud(screenEl);

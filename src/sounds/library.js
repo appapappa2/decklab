@@ -3,7 +3,7 @@
 // differs from DEFAULT_PATCH) and a sequence of [note, start s, length s, velocity?].
 // `make` runs on every play, so sounds with randomness never repeat exactly.
 //
-// Groups: the effects on the Animations tab (same names as its buttons), the
+// Groups: the effects on the VFX/Animations tab (same names as its buttons), the
 // cards on the table, and the app's UI.
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -19,7 +19,7 @@ const THUMP = { mix: { saw: 0, sub: 1, subType: 'oct1' }, vcf: { freq: 260, res:
 const PENTA = ['C6', 'D6', 'E6', 'G6', 'A6', 'C7', 'D7', 'E7'];
 
 export const GROUPS = [
-  { id: 'effects', name: 'Effects', note: 'One for each button on the Animations tab' },
+  { id: 'effects', name: 'Effects', note: 'One for each effect on the VFX/Animations tab' },
   { id: 'cards', name: 'Cards', note: 'On the table' },
   { id: 'ui', name: 'UI', note: 'Taps, swipes, sheets and toggles' },
 ];

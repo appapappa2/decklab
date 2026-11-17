@@ -384,7 +384,11 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
 .statusbar .battery::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: color-mix(in srgb, currentColor 55%, transparent); }
 #device.landscape .statusbar { display: none; }
 
-/* The effects board: a column of buttons to the right of the Animations phone (devboard). */
+/* The VFX/Animations board: a column to the right of that tab's phone (devboard).
+   It lists the effects; opening one turns it into an editor, which is wider, so
+   the phone moves over to make room. */
+.db-stage { transition: padding .3s var(--ease); }
+body.fx-editing .db-stage { padding-right: 262px; }
 #fx-board {
   position: absolute;
   right: 10px;
@@ -393,7 +397,7 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 128px;
+  width: 160px;
   max-height: calc(100% - 24px);
   padding: 12px 10px;
   box-sizing: border-box;
@@ -403,10 +407,14 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
   background: #12161b;
   color: #e7eaee;
   font: 500 12px/1.2 system-ui, sans-serif;
+  transition: width .3s var(--ease);
 }
+#fx-board.editing { width: 256px; }
 .fxb-title { margin: 0 2px 2px; font-size: 13px; font-weight: 700; }
 .fxb-group { margin: 8px 2px 2px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.fxb-btn {
+.fxb-row { display: flex; gap: 4px; }
+.fxb-row .fxb-btn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fxb-btn, .fxb-play, .fxb-mini {
   padding: 7px 9px;
   border: 1px solid #2c323b;
   border-radius: 9px;
@@ -417,8 +425,38 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
   cursor: pointer;
   transition: background-color .12s, transform .12s;
 }
-.fxb-btn:hover { background: #1f242c; }
-.fxb-btn:active { transform: scale(.96); background: #262c35; }
+.fxb-play, .fxb-mini { flex: none; width: 28px; padding: 7px 0; text-align: center; color: var(--muted); }
+:is(.fxb-btn, .fxb-play, .fxb-mini):hover { background: #1f242c; color: #e7eaee; }
+:is(.fxb-btn, .fxb-play, .fxb-mini):active { transform: scale(.96); background: #262c35; }
+.fxb-new { margin-top: 6px; border-style: dashed; color: var(--muted); text-align: center; }
+.fxb-wide { text-align: center; }
+.fxb-note { margin: 6px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+/* The editor. */
+.fxb-edit-head { display: flex; align-items: center; gap: 8px; }
+.fxb-edit-head .fxb-title { margin: 0; }
+#fx-board :is(input[type="text"], select) {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #2c323b;
+  border-radius: 8px;
+  background: #0d1014;
+  color: inherit;
+  font: inherit;
+}
+#fx-board .fxb-name { font-size: 14px; font-weight: 600; }
+.fxb-layer { display: flex; flex-direction: column; gap: 7px; padding: 8px; border: 1px solid #2c323b; border-radius: 11px; background: #171b21; }
+.fxb-layer-head { display: flex; gap: 4px; }
+.fxb-layer-head .fxb-type { flex: 1; font-weight: 600; }
+.fxb-layer .fxb-mini { background: #12161b; }
+.fxb-field { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 8px; color: var(--muted); font-size: 11px; }
+.fxb-field-value { color: #e7eaee; font-variant-numeric: tabular-nums; }
+.fxb-field input[type="range"] { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #e7eaee; }
+.fxb-field :is(input[type="text"], select) { width: 124px; }
+.fxb-field input[type="checkbox"] { margin: 0; accent-color: #e7eaee; }
+.fxb-actions { display: flex; gap: 5px; margin-top: 4px; }
+.fxb-actions .fxb-btn { flex: 1; text-align: center; }
+#fx-board .fxb-save { background: #e7eaee; border-color: #e7eaee; color: #12161b; font-weight: 700; }
+#fx-board .fxb-danger { color: #ff8b7b; }
 /* It needs room beside the phone, and it has no place on a real phone. */
 body.mode-phone #fx-board { display: none; }
 @media (max-width: 640px) { #fx-board { display: none; } }
@@ -2312,8 +2350,7 @@ body.route-game .game-scene.active { display: block; }
   100% { opacity: 0; transform: translate(0, -190%) scale(1); }
 }
 /* Your turn: a soft glow in the game's color rises from your side of the table. */
-.fx-glow,
-.game-scene.fx-turn::after {
+.fx-glow {
   content: '';
   position: absolute;
   left: 0;
@@ -2343,7 +2380,7 @@ body.route-game .game-scene.active { display: block; }
   letter-spacing: -.02em;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 0 0 4px var(--card), 0 7px 0 4px rgba(23, 20, 15, .18);
+  box-shadow: 0 7px 0 rgba(23, 20, 15, .18);
 }
 .fx-stamp.round { display: grid; place-items: center; width: 136px; height: 136px; box-sizing: border-box; padding: 0; border-radius: 50%; font-size: 84px; letter-spacing: 0; }
 .fx-stamp.round.word { font-size: 40px; }
