@@ -1,7 +1,8 @@
 const MAX_PARTICLES = 45;
 const MAX_EMISSION = 6;
 const EMISSION_RATE = 90;
-const COLORS = ['#fffaf0', '#fffaf0', '#fffaf0', '#f3dfb7', '#dcd0ff', '#cdeff3'];
+// The four palette colors, so trails and bursts read as confetti on any backdrop.
+const COLORS = ['#F0442E', '#FFC42E', '#149A6A', '#2B62F0'];
 
 /** Sharp foil trails and small landing bursts, local to the card table. */
 export class SparkleTrail {

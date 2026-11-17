@@ -3,7 +3,7 @@
 // tap anywhere else (in your half, with two players) to slap. Keys: Space
 // slaps and Enter flips; with two players F/D flip/slap for the bottom player
 // and J/K for the top one.
-import { CardSprite } from '../cards.js?v=landing-burst';
+import { CardSprite } from '../cards.js?v=fourcolor';
 import { Slapjack } from './rules.js';
 
 const DECK_SCALE = 0.6;

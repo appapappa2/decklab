@@ -3,11 +3,11 @@
 // for that rank, and the card stays in your hand. Rules run instantly; the
 // resulting events are played back on a short timeline so you can follow them.
 import { Input } from '../input.js';
-import { cardBackHTML } from '../cards.js?v=landing-burst';
+import { cardBackHTML } from '../cards.js?v=fourcolor';
 import { createDeck } from '../cards.js';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=rummy';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
 import { GoFish, other } from './rules.js';
 
 const SAVE_KEY = 'thedeck.gofish.v1';

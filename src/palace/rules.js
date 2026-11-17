@@ -1,4 +1,4 @@
-// Shithead for 2–4 players. Pure state, no DOM, so it can be tested in Node.
+// Palace (also known as Shithead) for 2–4 players. Pure state, no DOM, so it can be tested in Node.
 //
 // Each player gets 3 face-down table cards, 3 face-up cards on top of them and
 // 3 in hand; before play, players may swap hand cards with their face-up ones.
@@ -11,13 +11,13 @@
 // If you can't play, pick up the whole pile. With your hand and the deck
 // empty, play from your face-up cards, then blind from your face-down cards
 // (an unplayable blind card is picked up with the pile). Players drop out as
-// they run out of cards; the last one holding cards is the Shithead.
+// they run out of cards; the last one holding cards loses.
 import { createDeck, shuffle } from '../cards.js';
 
 export const power = (c) => (c.value === 1 ? 14 : c.value);
 const isWild = (c) => c.value === 2 || c.value === 10;
 
-export class Shithead {
+export class Palace {
   constructor({ players = 2, deck = shuffle(createDeck()) } = {}) {
     this.n = Math.max(2, Math.min(4, players));
     this.stock = deck.slice();
@@ -254,7 +254,7 @@ export class Shithead {
       seen.add(id);
       return c;
     };
-    const g = new Shithead({ players: d.n });
+    const g = new Palace({ players: d.n });
     g.stock = d.stock.map(card);
     g.hands = d.hands.map((a) => a.map(card));
     g.up = d.up.map((a) => a.map(card));

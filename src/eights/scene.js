@@ -4,10 +4,10 @@
 // add the rules: illegal plays snap back, the deck draws only when you must,
 // and the CPU's cards land on the same pile.
 import { Input } from '../input.js';
-import { cardBackHTML, suitHTML, SUITS } from '../cards.js?v=landing-burst';
-import { RuleTable } from '../table.js?v=rummy';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
+import { cardBackHTML, suitHTML, SUITS } from '../cards.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
 import { CrazyEights } from './rules.js';
 
 const SAVE_KEY = 'thedeck.eights.v1';

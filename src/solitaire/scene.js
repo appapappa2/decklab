@@ -1,7 +1,7 @@
 // Klondike solitaire scene: layout, spring-driven cards, drag & drop, tap to
 // auto-move, undo, auto-finish and a win screen. Lives in #solitaire inside
 // #screen and gets the same (W, H, safe) as the lab.
-import { CardSprite } from '../cards.js?v=landing-burst';
+import { CardSprite } from '../cards.js?v=fourcolor';
 import { Klondike, FOUNDATIONS, TABLEAU, PILES } from './rules.js';
 
 const SAVE_KEY = 'thedeck.solitaire.v1';

@@ -7,11 +7,9 @@
   --muted: #8b939e;
   --accent: #5fd4a0;
   --sel: #ffd257;
-  --card-paper: #faf7ef;
-  --card-ink: #000;
-  --card-red: #d95742;
   --ease: cubic-bezier(.45, .05, .25, 1);
-  --round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* One typeface, two weights: Futura Medium for text, Bold for names and buttons. */
+  --font: Futura, "Futura PT", "Century Gothic", "Avenir Next", system-ui, sans-serif;
   color-scheme: dark;
 }
 
@@ -107,6 +105,121 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
 }
 #screen * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
+/* ---------------------------------------------------------------- palette */
+
+/* Four colors on a neutral base. The lobby, the cards and every game are drawn
+   with these tokens only (shadows are ink at low opacity). */
+#screen {
+  --red: #F0442E;
+  --yellow: #FFC42E;
+  --green: #149A6A;
+  --blue: #2B62F0;
+  --ink-c: #17140F;
+  --paper: #F5EFE3;
+  --card: #FFFDF7;
+  --spring: cubic-bezier(.3, 1.5, .5, 1);
+}
+/* The current game's color and its partner (set from games.js via data-c / data-p).
+   :where() keeps this default weaker than the attribute rules below. */
+:where(#screen) {
+  --c: var(--green);
+  --on-c: var(--card);
+  --p: var(--yellow);
+  --on-p: var(--ink-c);
+}
+[data-c="red"] { --c: var(--red); --on-c: var(--card); }
+[data-c="yellow"] { --c: var(--yellow); --on-c: var(--ink-c); }
+[data-c="green"] { --c: var(--green); --on-c: var(--card); }
+[data-c="blue"] { --c: var(--blue); --on-c: var(--card); }
+[data-c="ink"] { --c: var(--ink-c); --on-c: var(--card); }
+[data-p="red"] { --p: var(--red); --on-p: var(--card); }
+[data-p="yellow"] { --p: var(--yellow); --on-p: var(--ink-c); }
+[data-p="green"] { --p: var(--green); --on-p: var(--card); }
+[data-p="blue"] { --p: var(--blue); --on-p: var(--card); }
+
+/* Backdrops. Each one only says what the base is and what sits on it:
+     --base / --fg   the surface and the text on it
+     --hi / --hi-fg  the one loud thing on screen (primary button, "go")
+     --mark          small "it's your turn" dots
+     --back          card backs
+     --you / --them  the two sides of a table */
+#screen {
+  --base: var(--paper);
+  --fg: var(--ink-c);
+  --hi: var(--c);
+  --hi-fg: var(--on-c);
+  --mark: var(--c);
+  --back: var(--c);
+  --back-fg: var(--on-c);
+  --you: var(--blue);
+  --them: var(--red);
+  /* Card shadows are solid colors (the table, darkened), never see-through:
+     a pile of cards then casts the same shadow as a single card. */
+  --shade: color-mix(in srgb, var(--ink-c) 17%, var(--paper));
+  --shade-lift: color-mix(in srgb, var(--ink-c) 20%, var(--paper));
+}
+:root[data-theme="paper"] #screen[data-c="yellow"] { --mark: var(--ink-c); }
+:root[data-theme="color"] #screen {
+  --base: var(--c);
+  --fg: var(--on-c);
+  --hi: var(--p);
+  --hi-fg: var(--on-p);
+  --mark: var(--on-c);
+  --back: var(--ink-c);
+  --back-fg: var(--paper);
+  --you: var(--on-c);
+  --them: var(--on-c);
+  --dim: var(--card);
+  --dim-by: .62;
+  --shade: color-mix(in srgb, var(--ink-c) 22%, var(--c));
+  --shade-lift: color-mix(in srgb, var(--ink-c) 26%, var(--c));
+}
+/* The hand feel lab keeps its dark table whatever the backdrop is. */
+:root[data-theme="ink"] #screen,
+:root body.route-lab #screen {
+  --base: var(--ink-c);
+  --fg: var(--paper);
+  --hi: var(--c);
+  --hi-fg: var(--on-c);
+  --mark: var(--c);
+  --back: var(--c);
+  --back-fg: var(--on-c);
+  --you: var(--blue);
+  --them: var(--red);
+  /* On a near-black table a resting card needs no edge; a lifted one still darkens what's under it. */
+  --shade: transparent;
+  --shade-lift: #0A0906;
+}
+/* Sheets (dialogs, pickers, trays) are always a white card, in every backdrop. */
+:is(.game-win-card, .c8-picker-card, .gs-sheet, .gm-panel) {
+  --base: var(--card);
+  --fg: var(--ink-c);
+  --hi: var(--c);
+  --hi-fg: var(--on-c);
+  --mark: var(--c);
+  --you: var(--blue);
+  --them: var(--red);
+  background: var(--base);
+  color: var(--fg);
+  box-shadow: 0 0 0 1.5px rgba(23, 20, 15, .08), 0 7px 0 rgba(23, 20, 15, .16);
+}
+#screen[data-c="yellow"] :is(.game-win-card, .c8-picker-card, .gs-sheet, .gm-panel) { --mark: var(--ink-c); }
+/* Tints, worked out from whatever base and text are in scope. */
+#screen,
+:is(.game-win-card, .c8-picker-card, .gs-sheet, .gm-panel) {
+  --fg-2: color-mix(in srgb, var(--fg) 66%, var(--base));
+  --fg-3: color-mix(in srgb, var(--fg) 42%, var(--base));
+  --chip: color-mix(in srgb, var(--fg) 9%, var(--base));
+  --chip-2: color-mix(in srgb, var(--fg) 15%, var(--base));
+  --rule: color-mix(in srgb, var(--fg) 20%, var(--base));
+  --edge: color-mix(in srgb, var(--fg) 26%, var(--base));
+  --hi-edge: color-mix(in srgb, var(--hi) 72%, var(--ink-c));
+  --scrim: color-mix(in srgb, var(--ink-c) 42%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  #screen *, #screen *::before, #screen *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+}
+
 .island {
   position: absolute;
   z-index: 3000;
@@ -130,8 +243,10 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
   width: 134px;
   height: 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, .75);
+  background: var(--fg);
+  opacity: .75;
   transform: translateX(-50%);
+  transition: background-color .4s;
 }
 #device.landscape .home-indicator { bottom: 6px; width: 190px; }
 
@@ -149,17 +264,18 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
   justify-content: space-between;
   font-weight: 600;
   font-size: 16px;
-  color: #fff;
+  color: var(--fg);
+  transition: color .4s;
 }
 .statusbar .battery {
   position: relative;
   width: 25px;
   height: 12px;
-  border: 1.5px solid rgba(255, 255, 255, .55);
+  border: 1.5px solid color-mix(in srgb, currentColor 55%, transparent);
   border-radius: 4px;
 }
-.statusbar .battery::before { content: ''; position: absolute; inset: 1.5px; right: 5px; border-radius: 1.5px; background: #fff; }
-.statusbar .battery::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: rgba(255, 255, 255, .55); }
+.statusbar .battery::before { content: ''; position: absolute; inset: 1.5px; right: 5px; border-radius: 1.5px; background: currentColor; }
+.statusbar .battery::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: color-mix(in srgb, currentColor 55%, transparent); }
 #device.landscape .statusbar { display: none; }
 
 #device-bar { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; }
@@ -172,6 +288,16 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
   color: var(--text);
 }
 #device-bar button:hover { background: #1f242c; }
+/* Backdrop switch (paper / color / ink), next to Rotate under the frame. */
+.theme-switch { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border: 1px solid #2c323b; border-radius: 999px; background: #171b21; }
+body.route-lab .theme-switch { display: none; } /* the lab keeps its own dark table */
+#device-bar .theme-swatch { position: relative; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22); transition: transform .35s cubic-bezier(.3, 1.5, .5, 1), box-shadow .2s; }
+#device-bar .theme-swatch::before { content: ''; position: absolute; inset: -8px -5px; }
+#device-bar .theme-swatch-paper { background: #F5EFE3; }
+#device-bar .theme-swatch-color { background: conic-gradient(#F0442E 0 25%, #FFC42E 0 50%, #149A6A 0 75%, #2B62F0 0); box-shadow: none; }
+#device-bar .theme-swatch-ink { background: #17140F; }
+#device-bar .theme-swatch[aria-checked="true"] { transform: scale(1.15); box-shadow: 0 0 0 2px #171b21, 0 0 0 3.5px #e7eaee; }
+#device-bar .theme-swatch:active { transform: scale(.82); }
 kbd {
   font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   padding: 2px 5px;
@@ -186,6 +312,7 @@ kbd {
 #table { position: absolute; inset: 0; z-index: 0; }
 
 #deck, .deck-pile { position: absolute; width: var(--cw); height: var(--ch); }
+/* A flat stack: two paper edges peeking out under the top card. */
 #deck .deck-stack,
 .deck-pile .deck-stack {
   position: absolute;
@@ -193,15 +320,15 @@ kbd {
   overflow: hidden;
   border-radius: var(--card-radius);
   box-shadow:
-    0 1px 0 #e3ded2,
-    0 3px 0 #aaa395,
-    0 5px 0 #e3ded2,
-    0 7px 0 #9e9789,
-    0 10px 18px rgba(0, 0, 0, .28);
+    inset 0 0 0 calc(var(--cw) * .05) var(--card),
+    0 1.5px 0 var(--card),
+    0 2.5px 0 rgba(23, 20, 15, .18),
+    0 4px 0 var(--card),
+    0 5px 0 rgba(23, 20, 15, .18),
+    0 calc(5px + var(--cw) * .04) 0 var(--shade);
 }
 #deck.empty .deck-stack,
-.deck-pile.empty .deck-stack { background: none; box-shadow: none; border: 2px dashed rgba(255, 255, 255, .2); }
-#deck.empty .deck-stack::before,
+.deck-pile.empty .deck-stack { background: none; box-shadow: none; border: 2px dashed var(--fg-3); }
 #deck.empty .back-pattern,
 .deck-pile.empty .back-pattern { display: none; }
 #deck-count,
@@ -209,23 +336,25 @@ kbd {
   position: absolute;
   left: 50%;
   top: 100%;
-  margin-top: 7px;
+  /* A pile can be drawn smaller than a card (--ps, set by hud.js); its caption stays one size. */
+  margin-top: calc(7px / var(--ps, 1));
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, .6);
+  font-size: calc(11px / var(--ps, 1));
+  font-weight: 700;
+  color: var(--fg-3);
 }
 
-.back-art {
-  background: #fff;
-}
+/* Card backs: one flat color, a paper border and a dot grid. */
+.back-art { background-color: var(--back); }
 .back-pattern {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background-size: calc(var(--cw) * .8) calc(var(--cw) * .8);
+  inset: calc(var(--cw) * .05);
+  border-radius: calc(var(--card-radius) * .7);
+  background-image: radial-gradient(circle, var(--back-fg) 0 21%, transparent 24%);
+  background-size: calc(var(--cw) * .2) calc(var(--cw) * .2);
   background-position: center;
+  opacity: .34;
 }
 
 /* ------------------------------------------------------------------ cards */
@@ -245,11 +374,18 @@ kbd {
   will-change: transform;
   perspective: 900px;
 }
+/* One light, straight above the table, and no blur anywhere: a card at rest
+   has a hairline and a short hard edge under it (its thickness); a card that is
+   lifted also throws a flat, crisp shadow further down (this element, faded in
+   by how far it is lifted). Both are solid colors, so stacked cards don't
+   multiply them. */
 .card .shadow {
   position: absolute;
-  inset: 6% 5%;
+  inset: 0;
   border-radius: var(--card-radius);
-  box-shadow: 0 calc(var(--cw) * .18) calc(var(--cw) * .3) rgba(0, 0, 0, .35);
+  background: var(--shade-lift);
+  /* --sw narrows it with the card while the card turns over (set in cards.js). */
+  transform: translateY(calc(var(--cw) * .1)) scaleX(var(--sw, 1));
   opacity: 0;
 }
 .card-inner { position: absolute; inset: 0; transform-style: preserve-3d; }
@@ -261,24 +397,34 @@ kbd {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
+/* A four-color deck: every suit has its own color, ranks stay in ink. */
 .front {
-  background: var(--card-paper);
-  color: var(--card-ink);
+  background-color: var(--card);
+  color: var(--ink-c);
+  /* The hairline is drawn inside the edge, so a stack of cards doesn't add up to a dark outline. */
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, .16),
-    0 3px 7px rgba(0, 0, 0, .12);
+    inset 0 0 0 1px rgba(23, 20, 15, .1),
+    0 calc(var(--cw) * .028) 0 var(--shade);
 }
-.front.red { color: var(--card-red); }
+.suit-mark.suit-S { color: var(--blue); }
+.suit-mark.suit-H { color: var(--red); }
+.suit-mark.suit-C { color: var(--green); }
+.suit-mark.suit-D { color: var(--yellow); }
 .back {
   transform: rotateY(180deg);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, .2);
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 20, 15, .1),
+    inset 0 0 0 calc(var(--cw) * .05) var(--card),
+    0 calc(var(--cw) * .028) 0 var(--shade);
 }
+/* Selected: a ring in the text color that snaps on. */
 .card.selected .front {
   box-shadow:
-    0 0 0 calc(var(--cw) * .03) var(--sel),
-    0 0 calc(var(--cw) * .12) rgba(255, 210, 87, .28),
-    0 3px 7px rgba(0, 0, 0, .12);
+    0 0 0 calc(var(--cw) * .02) var(--base),
+    0 0 0 calc(var(--cw) * .055) var(--fg);
+  animation: card-ring .32s var(--spring);
 }
+@keyframes card-ring { from { box-shadow: 0 0 0 0 var(--base), 0 0 0 calc(var(--cw) * .14) transparent; } }
 
 /* Moving paper catches light without changing the solid suit artwork. */
 .front,
@@ -288,32 +434,6 @@ kbd {
     transparent 48%,
     rgba(0, 0, 0, var(--card-light-shade, 0)));
 }
-
-/* A quiet pearlescent finish catches the light as foil cards move. */
-.card-foil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, .45), transparent 55%),
-    linear-gradient(calc(110deg + var(--foil-angle, 0deg)), transparent 24%, rgba(133, 210, 225, .52) 38%, rgba(182, 184, 239, .5) 46%, rgba(226, 176, 215, .48) 52%, rgba(236, 212, 148, .46) 59%, transparent 72%);
-  background-size: 100% 100%, 220% 220%;
-  background-position: center;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .08), #000 30%, #000 70%, rgba(0, 0, 0, .08));
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .08), #000 30%, #000 70%, rgba(0, 0, 0, .08));
-  filter: hue-rotate(var(--foil-hue, 0deg));
-  opacity: var(--foil-strength, .82);
-}
-.card-foil::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(calc(65deg + var(--foil-angle, 0deg)), transparent 40%, rgba(255, 255, 255, .16) 46%, rgba(255, 255, 255, .6) 50%, rgba(204, 193, 233, .25) 54%, transparent 60%);
-  background-size: 220% 220%;
-  background-position: center;
-}
-.front.foil .corner,
-.front.foil .center { z-index: 1; }
 
 .corner {
   position: absolute;
@@ -327,10 +447,10 @@ kbd {
 .corner.tl { left: 6%; top: 7%; }
 .corner.br { right: 6%; bottom: 7%; transform: rotate(180deg); }
 .corner b {
-  font: 750 calc(var(--cw) * .235)/1 -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+  font: 800 calc(var(--cw) * .235)/1 var(--font);
   letter-spacing: -.055em;
 }
-.corner b.rank-ten { font-size: calc(var(--cw) * .205); }
+.corner b.rank-ten { font-size: calc(var(--cw) * .19); letter-spacing: -.1em; margin-left: -.06em; }
 .suit-mark { display: block; flex: none; height: auto; overflow: visible; }
 .corner .suit-mark { width: 68%; }
 .center { position: absolute; inset: 0; display: grid; place-items: center; }
@@ -345,27 +465,25 @@ kbd {
   position: absolute;
   left: 0;
   top: 0;
-  padding: 7px 16px;
+  padding: 8px 17px;
   border: 0;
   border-radius: 999px;
-  background: var(--sel);
-  color: #2b1d00;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: .03em;
+  background: var(--hi);
+  color: var(--hi-fg);
+  font: 900 13px/1.2 var(--font);
+  letter-spacing: .02em;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .35), inset 0 -2px 0 rgba(0, 0, 0, .12);
+  box-shadow: 0 0 0 2.5px var(--card), 0 5px 0 1px rgba(23, 20, 15, .2);
   pointer-events: auto;
   touch-action: manipulation;
   will-change: transform;
   opacity: 0;
-  scale: .5;
-  transition: opacity .15s, scale .22s cubic-bezier(.3, 1.6, .5, 1);
+  scale: .4;
+  transition: opacity .15s, scale .28s var(--spring), box-shadow .12s;
 }
 .play-btn::before { content: ''; position: absolute; inset: -10px -8px; } /* bigger touch target */
 .play-btn.show { opacity: 1; scale: 1; }
-.play-btn.show:hover { background: #ffdc7a; }
-.play-btn.show:active { scale: .9; }
+.play-btn.show:active { scale: .9; box-shadow: 0 0 0 2.5px var(--card), 0 1px 0 1px rgba(23, 20, 15, .2); }
 .play-btn:disabled { pointer-events: none; }
 
 .edge {
@@ -389,18 +507,18 @@ kbd {
 }
 [data-hint="fade"] > .edge::before,
 [data-hint="both"] > .edge::before { display: block; }
-.edge.left::before { background: linear-gradient(to right, rgba(0, 0, 0, .85), rgba(0, 0, 0, 0)); }
-.edge.right::before { background: linear-gradient(to left, rgba(0, 0, 0, .85), rgba(0, 0, 0, 0)); }
+.edge.left::before { background: linear-gradient(to right, var(--base), transparent); }
+.edge.right::before { background: linear-gradient(to left, var(--base), transparent); }
 .edge .count {
   display: none;
   position: absolute;
   top: -28px;
   padding: 4px 9px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .55);
-  color: #fff;
+  background: var(--fg);
+  color: var(--base);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   white-space: nowrap;
 }
 .edge.left .count { left: calc(var(--safe-left) + 8px); }
@@ -423,10 +541,8 @@ kbd {
   place-items: center;
   border: 0;
   border-radius: 50%;
-  color: rgba(255, 255, 255, .85);
-  background: rgba(0, 0, 0, .3);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  color: var(--fg);
+  background: var(--chip);
 }
 body.panel-overlay #gear { display: grid; }
 
@@ -634,15 +750,30 @@ body.panel-overlay.panel-open #panel { transform: none; }
   scrollbar-width: none;
   border-radius: inherit;
   padding: calc(var(--safe-top) + 14px) calc(var(--safe-right) + 18px) calc(var(--safe-bottom) + 24px) calc(var(--safe-left) + 18px);
-  background:
-    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(95, 212, 160, .10) 0%, transparent 70%),
-    #121417;
+  background: var(--base);
+  color: var(--fg);
+  font-family: var(--font);
+  transition: background-color .5s var(--ease), color .3s;
 }
 body.route-lobby #lobby,
 body.zooming #lobby { display: block; }
-body.zooming .game-scene { pointer-events: none; will-change: transform, clip-path; }
+body.zooming .game-scene { pointer-events: none; will-change: opacity; }
 body.zooming .game-scene.zoom-out { display: block; }
-body.zooming #lobby { pointer-events: none; will-change: transform; }
+body.zooming #lobby { pointer-events: none; will-change: opacity; }
+/* The lobby-to-game transition (transition.js): a curtain of big cards that
+   drops in, covers the screen, and falls away. */
+.fly-layer { position: absolute; inset: 0; z-index: 2660; overflow: hidden; pointer-events: none; --ch: calc(var(--cw) * 1.4); --card-radius: calc(var(--cw) * .1); }
+.fly-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--cw);
+  height: var(--ch);
+  margin: calc(var(--ch) * -.5) 0 0 calc(var(--cw) * -.5);
+  filter: drop-shadow(0 calc(var(--cw) * .025) 0 rgba(23, 20, 15, .16));
+  will-change: transform;
+}
+.fly-card .face { -webkit-backface-visibility: visible; backface-visibility: visible; }
 body:not(.route-lab) #panel,
 body:not(.route-lab) #gear,
 body:not(.route-lab) #device-bar .keys { display: none !important; }
@@ -653,11 +784,14 @@ body.panel-overlay #lab-back { right: calc(var(--safe-right) + 56px); }
 .lobby-view { max-width: 520px; margin: 0 auto; }
 /* ---------------------------------------------- lobby: game select carousel */
 
-#lobby.carousel { overflow: hidden; padding: 0; touch-action: none; background: #f08a3c; }
+/* One column on a simple rhythm. Three fixed blocks: the name, the card, and
+   the caption with the Play bar. Between them sit four flexible gaps:
+   above the name, name to card, card to caption are all equal; the gap under
+   the Play bar is half of that, so the bar anchors the bottom. The dot strip
+   sits just under the name, inside the name-to-card gap, and takes no room of
+   its own. */
+#lobby.carousel { overflow: hidden; padding: 0; touch-action: none; }
 .gs {
-  --gs-cover: #2f8f5b;
-  --gs-bg: #ffb53d;
-  --gs-edge: #ef7fb0;
   position: absolute;
   inset: 0;
   max-width: none;
@@ -665,61 +799,60 @@ body.panel-overlay #lab-back { right: calc(var(--safe-right) + 56px); }
   flex-direction: column;
   overflow: hidden;
   container-type: size;
-  color: #1b1210;
-  font-family: var(--round);
-  background: var(--gs-edge);
-  transition: background-color .6s;
+  /* The top band holds the profile circle and the settings button. */
+  padding: calc(var(--safe-top) + 60px) 0 var(--safe-bottom);
 }
-/* The big soft disc behind the covers: one per game, the newest grows over the last. */
-.gs-discs { position: absolute; inset: 0; pointer-events: none; }
-.gs-disc {
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  width: min(205cqw, 165cqh);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, color-mix(in srgb, var(--gs-bg) 88%, #fff) 0%, var(--gs-bg) 40%, var(--gs-bg) 64%, color-mix(in srgb, var(--gs-bg) 60%, var(--gs-edge)) 69%, transparent 71%);
-  pointer-events: none;
-}
-/* Film grain over everything. */
-.gs::after {
-  content: '';
+/* The backdrop: one big wheel of suits (lobby.js), centered on the card. It
+   turns slowly on its own and a notch per game as the carousel moves. The
+   suits are drawn in the active game's color but stay faint, and the whole thing fades out
+   toward the name and the Play bar so the text stays clean. */
+.gs-backdrop {
   position: absolute;
   inset: 0;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
-  opacity: .13;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-image: radial-gradient(ellipse 110% 60% at 50% 47%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 110% 60% at 50% 47%, #000 35%, transparent 100%);
 }
+.gs-wheel { position: absolute; left: 50%; top: 47%; width: 0; height: 0; will-change: rotate; }
+.gs-wheel svg { position: absolute; left: 0; top: 0; translate: -50% -50%; opacity: .13; animation: gs-wheel 260s linear infinite; will-change: transform; }
+@keyframes gs-wheel { to { transform: rotate(360deg); } }
+/* Every suit takes the active game's color, and changes with it. */
+.gs-wheel path { fill: var(--c); transition: fill .45s var(--ease); }
+/* On the color backdrop the screen already is that color, so the suits take the text color there. */
+:root[data-theme="color"] .gs-wheel path { fill: var(--fg); }
+:root[data-theme="color"] .gs-wheel svg { opacity: .08; }
+/* On ink the game color sinks into the dark, so the wheel gets more of it. */
+:root[data-theme="ink"] .gs-wheel svg { opacity: .24; }
+.gs::before { content: ''; flex: 1 1 0; }
+.gs::after { content: ''; flex: .5 1 0; }
+.gs-gap { flex: 1 1 0; }
 
-.gs-head {
+.gs-top {
   position: relative;
   z-index: 2;
   flex: none;
-  display: flex;
-  justify-content: center;
-  padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 12px) 0 calc(var(--safe-left) + 12px);
+  padding: 0 calc(var(--safe-right) + 24px) 0 calc(var(--safe-left) + 24px);
+  text-align: center;
+  pointer-events: none;
 }
-.gs-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font: 900 26px/.78 var(--round);
-  letter-spacing: -.05em;
-  color: #1b1210;
+/* --len is the name's length, so long names shrink to fit on one line. */
+.gs-title {
+  margin: 0;
+  font: 900 min(42px, calc(152cqw / var(--len, 10)))/1 var(--font);
+  letter-spacing: -.02em;
+  white-space: nowrap;
 }
-.gs-logo span:last-child { margin-left: .5em; }
 
 .gs-stage {
-  --cover: 300px;
+  --cover: 250px;
   position: relative;
   z-index: 1;
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  height: calc(var(--cover) * 1.4); /* exactly the card */
   perspective: 900px;
-  perspective-origin: 50% 45%;
+  perspective-origin: 50% 50%;
   touch-action: none;
   cursor: grab;
 }
@@ -727,104 +860,296 @@ body.panel-overlay #lab-back { right: calc(var(--safe-right) + 56px); }
 .gs-item {
   position: absolute;
   left: 50%;
-  top: 46%;
+  top: 50%;
   width: var(--cover);
   height: calc(var(--cover) * 1.4);
   padding: 0;
   border: 0;
-  border-radius: calc(var(--cover) * .07);
+  border-radius: calc(var(--cover) * .08);
   background: none;
+  color: inherit;
   transform-style: preserve-3d;
   will-change: transform;
-  -webkit-box-reflect: below 6px linear-gradient(transparent 78%, rgba(255, 255, 255, .18));
 }
-.gs-item:focus-visible { outline: 3px solid #1b1210; outline-offset: 4px; }
-.gs-item.soon .cv::after { content: 'SOON'; position: absolute; right: 5cqw; bottom: 4cqw; padding: 1.2cqw 3cqw; border-radius: 99px; background: rgba(0, 0, 0, .55); color: #fff; font: 900 4cqw/1 var(--round); letter-spacing: .08em; }
+.gs-item:focus-visible { outline: 3px solid var(--fg); outline-offset: 5px; }
+/* The card gives a little under the finger. */
+.gs-item .cv { transition: scale .3s var(--spring); }
+.gs-item[aria-current="true"]:active .cv { scale: .955; transition-duration: .08s; }
+.gs-item.soon .cv::after { content: 'SOON'; position: absolute; right: 7cqw; bottom: 6cqw; padding: 1.6cqw 3.4cqw; border-radius: 99px; background: var(--ink-c); color: var(--card); font: 900 4cqw/1 var(--font); letter-spacing: .1em; }
 
 .gs-info {
-  position: absolute;
-  z-index: 200;
-  left: 50%;
-  top: calc(46% + var(--cover) * .7 + 14px);
-  width: calc(100% - 24px);
-  transform: translateX(-50%);
+  position: relative;
+  z-index: 2;
+  flex: none;
+  padding: 0 calc(var(--safe-right) + 24px) 0 calc(var(--safe-left) + 24px);
   text-align: center;
-  line-height: 1.25;
-  color: #1b1210;
-  pointer-events: none;
+  /* What the Play bar looks like for a game that isn't ready yet. */
+  --soon-bg: var(--chip);
+  --soon-fg: var(--fg-2);
+  --soon-edge: var(--edge);
 }
-.gs-title { font: 900 24px/1.1 var(--round); letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-sub { margin-top: 3px; font-size: 14px; font-weight: 700; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-meta { font-size: 12px; font-weight: 600; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-sub { font: 800 19px/1.25 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-meta { margin-top: 3px; font: 500 16px/1.3 var(--font); color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The Play bar: the one loud thing on screen. Play fills it; the Single / Multi
+   switch rides inside it on the right. It sits on a hard edge and sinks when
+   Play is pressed. */
+.gs-playbar {
+  --base: var(--hi);
+  --fg: var(--hi-fg);
+  --fg-2: color-mix(in srgb, var(--hi-fg) 72%, var(--hi));
+  --chip: color-mix(in srgb, var(--hi-fg) 16%, var(--hi));
+  display: flex;
+  align-items: center;
+  width: min(100%, 360px);
+  margin: 24px auto 0;
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--hi);
+  color: var(--hi-fg);
+  box-shadow: 0 5px 0 var(--hi-edge);
+  transition: transform .22s var(--spring), box-shadow .22s var(--spring), background-color .4s var(--ease), color .3s;
+}
+.gs-playbar:has(.gs-play:active) { transform: translateY(5px); box-shadow: 0 0 0 var(--hi-edge); transition-duration: .06s; }
+.gs-playbar.soon {
+  --base: var(--soon-bg);
+  --fg: var(--soon-fg);
+  --fg-2: var(--soon-fg);
+  --chip: var(--soon-edge);
+  background: var(--soon-bg);
+  color: var(--soon-fg);
+  box-shadow: 0 5px 0 var(--soon-edge);
+}
+.gs-playbar.soon:has(.gs-play:active) { box-shadow: 0 0 0 var(--soon-edge); }
+.gs-playbar.nudge { animation: gs-nudge .4s; }
+@keyframes gs-nudge { 20% { translate: -7px 0; } 45% { translate: 6px 0; } 70% { translate: -3px 0; } }
+.gs-play {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: 900 23px/1 var(--font);
+  letter-spacing: -.025em;
+  touch-action: manipulation;
+}
 .gs-toggle {
   position: relative;
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
-  margin: 8px 0 4px;
-  padding: 3px;
-  border: 2px solid #1b1210;
+  padding: 4px;
   border-radius: 999px;
+  background: var(--chip);
   pointer-events: auto;
 }
 .gs-toggle[hidden] { display: none; }
-/* The dark pill slides under the chosen side. */
+/* The pill slides under the chosen side. */
 .gs-toggle::before {
   content: '';
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
   border-radius: 999px;
-  background: #1b1210;
-  transition: transform .28s cubic-bezier(.3, 1.3, .5, 1);
+  background: var(--fg);
+  transition: transform .34s var(--spring);
 }
 .gs-toggle[data-mode="multi"]::before { transform: translateX(100%); }
 .gs-toggle-btn {
   position: relative;
-  min-width: 64px;
-  padding: 5px 12px;
+  min-width: 62px;
+  padding: 11px 13px;
   border: 0;
   border-radius: 999px;
   background: none;
-  color: #1b1210;
-  font: 800 13px/1 var(--round);
-  transition: color .2s;
+  color: var(--fg-2);
+  font: 800 13px/1 var(--font);
+  transition: color .2s, transform .2s var(--spring);
   touch-action: manipulation;
 }
-.gs-toggle-btn[aria-checked="true"] { color: #fff6ee; }
-.gs-info .swap { animation: gs-swap .35s cubic-bezier(.2, .8, .2, 1); }
-@keyframes gs-swap { from { opacity: 0; transform: translateY(5px); } }
-#lobby.carousel + .lobby-toast { bottom: calc(var(--safe-bottom) + 58px); }
-/* Short landscape screens: card a bit higher, and the tagline drops out. */
-@container (orientation: landscape) {
-  .gs-item { top: 37%; }
-  .gs-info { top: calc(37% + var(--cover) * .7 + 8px); }
-  .gs-toggle { margin-top: 5px; }
-  .gs-title { font-size: 20px; }
-  .gs-meta { display: none; }
+.gs-toggle-btn:active { transform: scale(.92); }
+.gs-toggle-btn[aria-checked="true"] { color: var(--base); }
+.gs .swap { animation: gs-swap .42s var(--spring); }
+.gs-title.swap { animation-duration: .5s; }
+@keyframes gs-swap { from { opacity: 0; transform: translateY(9px) scale(.94); } }
+/* Over the foot of the card, clear of the buttons. */
+#lobby.carousel + .lobby-toast { bottom: 29%; }
+/* The dot strip, tucked right under the name (inside the name-to-card gap): it drops
+   in while the carousel is moving and leaves again once a game has landed. */
+.gs-dots {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 5px;
+  padding-top: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: transform .4s cubic-bezier(.5, 0, .8, .4) .35s, opacity .3s .4s;
 }
-.gs-dots { position: relative; z-index: 2; flex: none; display: flex; justify-content: center; gap: 6px; padding: 4px 0 calc(var(--safe-bottom) + 18px); }
-.gs-dot { width: 8px; height: 8px; padding: 0; border: 2px solid #1b1210; border-radius: 50%; background: none; opacity: .45; transition: opacity .2s, background-color .2s, transform .2s; }
-.gs-dot.on { background: #1b1210; opacity: 1; transform: scale(1.15); }
-.gs-dev {
+.gs.scrolling .gs-dots { opacity: 1; pointer-events: auto; transform: none; transition: transform .4s var(--spring), opacity .15s; }
+.gs-dot { position: relative; width: 6px; height: 6px; padding: 0; border: 0; border-radius: 3px; background: var(--fg-3); transition: width .4s var(--spring), background-color .2s; }
+.gs-dot::before { content: ''; position: absolute; inset: -9px -2.5px; }
+.gs-dot.on { width: 20px; background: var(--fg); }
+/* Top left: the profile circle, one and a half times the settings button, saying "You". It takes the active game's color and changes with it. */
+.gs-you {
   position: absolute;
   z-index: 3;
-  right: calc(var(--safe-right) + 14px);
-  bottom: calc(var(--safe-bottom) + 12px);
-  padding: 4px 10px;
-  border: 1.5px solid rgba(27, 18, 16, .5);
-  border-radius: 999px;
-  color: rgba(27, 18, 16, .75);
-  font: 800 12px/1.2 var(--round);
-  text-decoration: none;
+  left: calc(var(--safe-left) + 16px);
+  top: calc(var(--safe-top) + 4px);
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--hi);
+  color: var(--hi-fg);
+  font: 700 18px/1 var(--font);
+  letter-spacing: -.02em;
+  transition: background-color .5s var(--ease), color .3s;
 }
-.gs-dev:hover { border-color: #1b1210; color: #1b1210; }
+/* It is a button: it opens your profile. Your rank rides on its corner. */
+.gs-you { padding: 0; border: 0; touch-action: manipulation; transition: background-color .5s var(--ease), color .3s, scale .25s var(--spring); }
+.gs-you:active { scale: .92; }
+.pf-face { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; }
+.pf-face .suit-mark { width: 50%; color: inherit; }
+.pf-face img { width: 100%; height: 100%; object-fit: cover; }
+.pf-rank {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--base);
+  font: 700 13px/1 var(--font);
+  letter-spacing: 0;
+  box-shadow: 0 0 0 3px var(--base);
+}
+/* The profile sheet: one centered column. Avatar, rank, avatar choices, the objective, Done. */
+.pf-sheet { display: flex; flex-direction: column; align-items: center; padding: 30px 26px 24px; text-align: center; }
+.pf-avatar {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--hi);
+  color: var(--hi-fg);
+  font: 700 30px/1 var(--font);
+  letter-spacing: -.02em;
+}
+.pf-avatar .pf-rank { right: 0; bottom: 0; min-width: 32px; height: 32px; font-size: 16px; }
+.pf-title { margin-top: 16px; font: 700 28px/1 var(--font); letter-spacing: -.02em; }
+.pf-picker { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
+.pf-pick {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--fg);
+  font: 700 12px/1 var(--font);
+  letter-spacing: -.02em;
+  touch-action: manipulation;
+  transition: scale .25s var(--spring), background-color .15s, color .15s;
+}
+.pf-pick:active { scale: .9; }
+.pf-pick .suit-mark { width: 46%; color: inherit; }
+.pf-pick svg { width: 18px; height: 18px; }
+.pf-pick:is([aria-checked="true"], .on) { background: var(--hi); color: var(--hi-fg); }
+.pf-upload { background: none; box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--fg-2); }
+.pf-goal { width: 100%; margin-top: 26px; }
+.pf-goal-label { color: var(--fg-2); font: 700 12px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; }
+.pf-goal-title { margin-top: 8px; font: 700 18px/1.2 var(--font); letter-spacing: -.01em; }
+.pf-bar { height: 10px; margin-top: 14px; border-radius: 999px; background: var(--chip); overflow: hidden; }
+.pf-bar i { display: block; height: 100%; border-radius: 999px; background: var(--hi); }
+.pf-goal-count { margin-top: 8px; color: var(--fg-2); font: 500 14px/1 var(--font); font-variant-numeric: tabular-nums; }
+.pf-sheet .pf-done { margin-top: 26px; width: 100%; padding: 16px 20px; font-size: 18px; }
+/* Top right: the round settings button (centered on the profile circle), and the sheet it opens. */
+.gs-gear {
+  position: absolute;
+  z-index: 3;
+  right: calc(var(--safe-right) + 16px);
+  top: calc(var(--safe-top) + 14px);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--fg);
+  touch-action: manipulation;
+  transition: transform .35s var(--spring), background-color .5s var(--ease), color .3s;
+}
+.gs-gear:active { transform: scale(.9) rotate(40deg); transition-duration: .08s; }
+.gs-sheet-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: var(--scrim);
+  opacity: 0;
+  pointer-events: none;
+  cursor: default;
+  transition: opacity .2s;
+}
+.gs-sheet-wrap.show { opacity: 1; pointer-events: auto; }
+.gs-sheet {
+  width: min(330px, calc(100% - 36px));
+  padding: 26px 22px 22px;
+  border-radius: 28px;
+  transform: translateY(18px) scale(.86) rotate(-3deg);
+  transition: transform .42s var(--spring);
+}
+.gs-sheet-wrap.show .gs-sheet { transform: none; }
+.gs-sheet-title { margin-bottom: 20px; font: 700 28px/1 var(--font); letter-spacing: -.02em; }
+.gs-sheet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.gs-sheet-label { font: 700 16px/1.2 var(--font); }
+/* A row of options: the chosen one is filled with the game's color. */
+.gs-opts { grid-template-columns: repeat(var(--n, 2), 1fr); }
+.gs-opts::before { display: none; }
+.gs-opts .gs-toggle-btn { min-width: 52px; padding: 10px 11px; }
+.gs-opts .gs-toggle-btn[aria-checked="true"] { background: var(--hi); color: var(--hi-fg); }
+.gs-sheet-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 24px; }
+.gs-sheet-actions .game-btn { text-decoration: none; }
+/* In landscape there is no room for a top band: the circle and the button sit in the corners. */
+#device.landscape .gs { padding-top: var(--safe-top); }
+@media (orientation: landscape) { body.mode-phone .gs { padding-top: var(--safe-top); } }
+/* Short landscape screens: just the name, the card and one row of buttons. */
+@container (orientation: landscape) {
+  .gs-you { top: 10px; width: 42px; height: 42px; font-size: 13px; }
+  .gs-gear { top: 11px; }
+  .gs-meta { display: none; }
+  .gs-sub { font-size: 15px; }
+  .gs-title { font-size: 24px; }
+  .gs-info { display: flex; justify-content: center; align-items: center; gap: 16px; }
+  .gs-playbar { width: auto; min-width: 250px; margin: 0; padding: 5px; }
+  .gs-play { min-height: 36px; font-size: 17px; }
+  .gs-toggle-btn { padding: 8px 12px; }
+}
 
 /* ------------------------------------------------------------------ intro */
 
 /* The backdrop sits under the lobby and the cards over it, so the lobby can zoom in between. */
-#intro-bg { position: absolute; inset: 0; z-index: 2590; background: #1b1210; pointer-events: none; }
+#intro-bg { position: absolute; inset: 0; z-index: 2590; background: var(--base); pointer-events: none; }
 #intro {
   position: absolute;
   inset: 0;
@@ -838,108 +1163,96 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
 .in-col { position: absolute; top: 0; will-change: transform; }
 .in-card { position: absolute; left: 0; will-change: transform; animation: in-pop .5s cubic-bezier(.3, 1.5, .5, 1) var(--d) both; }
 @keyframes in-pop { from { transform: scale(0) rotate(-14deg); opacity: 0; } }
-.in-logo {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 26px 20px;
-  border-radius: 28px;
-  background: #1b1210;
-  color: #fff3e6;
-  font: 900 64px/.78 var(--round);
-  letter-spacing: -.05em;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
-  transform: translate(-50%, -50%) rotate(-6deg);
-  animation: in-logo .6s cubic-bezier(.3, 1.6, .5, 1) 1.5s both;
-}
-.in-logo span:last-child { margin-left: .5em; }
-@keyframes in-logo { from { transform: translate(-50%, -50%) rotate(-30deg) scale(.2); opacity: 0; } }
 
 /* ------------------------------------------------------------- the covers */
 
+/* A cover is one flat color (the game's), a big tone-on-tone
+   suit, a few real cards and a round name sticker in the partner color. */
 .cv {
   --cw: 27cqw;
   --ch: calc(var(--cw) * 1.4);
   --card-radius: calc(var(--cw) * .12);
+  --back: var(--p);
+  --back-fg: var(--on-p);
   position: absolute;
   inset: 0;
   overflow: hidden;
   container-type: size;
   --w: var(--cover, 300px); /* the card's width; cq units here would measure the lobby */
-  border-radius: calc(var(--w) * .07);
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .22), transparent 55%),
-    var(--cv);
-  /* A thin paper edge, like a printed card. */
-  box-shadow: inset 0 0 0 calc(var(--w) * .035) #f6f1e4, inset 0 0 0 calc(var(--w) * .042) rgba(0, 0, 0, .12), 0 18px 40px rgba(0, 0, 0, .28), 0 2px 6px rgba(0, 0, 0, .15);
+  border-radius: calc(var(--w) * .08);
+  background: var(--c);
+  color: var(--on-c);
+  box-shadow:
+    0 0 0 1px rgba(23, 20, 15, .06),
+    0 calc(var(--w) * .028) 0 rgba(23, 20, 15, .16),
+    0 calc(var(--w) * .08) calc(var(--w) * .1) rgba(23, 20, 15, .14);
 }
-.gs-item.soon .cv { filter: saturate(.55) brightness(.92); }
-.cv-suit { position: absolute; left: 50%; top: 56%; width: 92%; transform: translate(-50%, -50%) rotate(-8deg); color: rgba(255, 255, 255, .13); }
-.cv-suit .suit-mark { width: 100%; }
+/* On the color backdrop the selected box has the table's own color, so a
+   deeper shadow does the job the paper border used to do. */
+:root[data-theme="color"] .gs-item .cv {
+  box-shadow:
+    0 0 0 1px rgba(23, 20, 15, .1),
+    0 calc(var(--w) * .028) 0 rgba(23, 20, 15, .24),
+    0 calc(var(--w) * .1) calc(var(--w) * .16) rgba(23, 20, 15, .3);
+}
+.cv-suit { position: absolute; left: 50%; top: 56%; width: 92%; transform: translate(-50%, -50%) rotate(-8deg); color: color-mix(in srgb, var(--c) 88%, var(--ink-c)); }
+.cv-suit .suit-mark { width: 100%; color: inherit; }
 .cv-card {
   position: absolute;
   width: var(--cw);
   height: var(--ch);
   transform: translate(-50%, -50%) rotate(var(--r));
-  filter: drop-shadow(0 1.2cqw 1.6cqw rgba(0, 0, 0, .28));
+  filter: drop-shadow(0 .9cqw 0 rgba(23, 20, 15, .2));
 }
 .cv-card .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
+.cv-card .front { box-shadow: none; }
 .cv-back {
   position: absolute;
   inset: 0;
   overflow: hidden;
   border-radius: var(--card-radius);
-  background-color: #2f5fa8;
-  box-shadow: inset 0 0 0 calc(var(--cw) * .05) #f4f1e8;
+  box-shadow: inset 0 0 0 calc(var(--cw) * .05) var(--card);
 }
-.cv-back .back-pattern { inset: calc(var(--cw) * .05); background-size: calc(var(--cw) * .5) calc(var(--cw) * .5); filter: brightness(0) invert(1); opacity: .22; }
+/* The selected cover's cards hop, one after the other. The name sticker stays put. */
+.gs-item.on .cv-card { animation: cv-hop .6s var(--spring) calc(var(--i, 0) * 45ms + 60ms) backwards; }
+@keyframes cv-hop {
+  0% { transform: translate(-50%, -50%) rotate(var(--r)); }
+  40% { transform: translate(-50%, -64%) rotate(calc(var(--r) * 1.3)) scale(1.07); }
+  100% { transform: translate(-50%, -50%) rotate(var(--r)); }
+}
 .cv-chip {
   position: absolute;
   width: 13cqw;
   height: 13cqw;
+  border: 1.3cqw dashed var(--card);
   border-radius: 50%;
+  background: var(--c);
   transform: translate(-50%, -50%);
-  box-shadow: inset 0 0 0 1.2cqw rgba(255, 255, 255, .85), inset 0 0 0 2cqw rgba(0, 0, 0, .15), 0 1cqw 2cqw rgba(0, 0, 0, .3);
+  box-shadow: 0 .9cqw 0 rgba(23, 20, 15, .2);
 }
 .cv-sticker {
   position: absolute;
-  width: 34cqw;
-  height: 34cqw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5cqw;
-  padding: 3cqw;
+  width: 43cqw;
+  height: 43cqw;
+  display: grid;
+  place-items: center;
+  padding: 4cqw;
   border-radius: 50%;
-  background: var(--sc);
-  color: var(--si);
+  background: var(--p);
+  color: var(--on-p);
   text-align: center;
   transform: translate(-50%, -50%) rotate(-9deg);
-  box-shadow: 0 .8cqw 2cqw rgba(0, 0, 0, .2);
+  box-shadow: 0 .9cqw 0 rgba(23, 20, 15, .2);
 }
-.cv-sticker-title { font: italic 900 7.4cqw/.9 var(--round); letter-spacing: -.04em; }
-.cv-sticker-small { font: 800 2cqw/1 var(--round); letter-spacing: .06em; opacity: .75; }
-/* Plastic wrap: soft diagonal highlights over the whole sleeve. */
-.cv-wrap {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, .22) 24%, transparent 31%),
-    linear-gradient(115deg, transparent 58%, rgba(255, 255, 255, .14) 63%, transparent 70%),
-    linear-gradient(200deg, rgba(255, 255, 255, .1), transparent 40%);
-  mix-blend-mode: screen;
-}
+/* --n is the longest word's length: long names shrink to fit the circle. */
+.cv-sticker-title { font: 700 min(8.2cqw, calc(54cqw / var(--n, 8)))/.95 var(--font); letter-spacing: -.02em; }
 
 
+/* The dev menu. */
 .lobby-header { display: flex; align-items: center; gap: 10px; margin: 6px 0 20px; }
 .lobby-titles { flex: 1; min-width: 0; }
-.lobby-title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.01em; }
-.lobby-sub { color: var(--muted); font-size: 14px; }
+.lobby-title { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -.03em; }
+.lobby-sub { color: var(--fg-2); font-size: 14px; font-weight: 500; }
 .lobby-icon-btn, #lab-back {
   flex: none;
   display: grid;
@@ -948,8 +1261,8 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
   height: 38px;
   border: 0;
   border-radius: 50%;
-  color: rgba(255, 255, 255, .9);
-  background: rgba(255, 255, 255, .08);
+  color: var(--fg);
+  background: var(--chip);
   font-size: 26px;
   line-height: 1;
   padding-bottom: 3px;
@@ -958,13 +1271,13 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
 .lobby-dev-btn {
   flex: none;
   padding: 6px 12px;
-  border: 1px solid #2c323b;
+  border: 1.5px solid var(--rule);
   border-radius: 999px;
-  color: var(--muted);
+  color: var(--fg-2);
   font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   text-decoration: none;
 }
-.lobby-dev-btn:hover { color: var(--text); border-color: #3a414c; }
+.lobby-dev-btn:hover { color: var(--fg); border-color: var(--fg-3); }
 
 
 .lobby-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -974,37 +1287,37 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #181b20;
+  border: 0;
+  border-radius: 18px;
+  background: var(--chip);
   color: inherit;
   text-align: left;
   text-decoration: none;
   touch-action: pan-y;
-  transition: background .15s, transform .12s;
+  transition: background .15s, transform .2s var(--spring);
 }
-.lobby-item:hover { background: #1e2228; }
-.lobby-item:active { transform: scale(.98); }
+.lobby-item:hover { background: var(--chip-2); }
+.lobby-item:active { transform: scale(.97); }
 .lobby-item-text { flex: 1; min-width: 0; }
-.lobby-item-name { font-size: 16px; font-weight: 700; }
-.lobby-item-blurb { color: var(--muted); font-size: 13px; }
-.lobby-chevron { flex: none; color: var(--muted); font-size: 24px; }
+.lobby-item-name { font-size: 16px; font-weight: 800; }
+.lobby-item-blurb { color: var(--fg-2); font-size: 13px; }
+.lobby-chevron { flex: none; color: var(--fg-3); font-size: 24px; }
 
 .lobby-toast {
   position: absolute;
   z-index: 2700;
   left: 50%;
   bottom: calc(var(--safe-bottom) + 28px);
-  padding: 9px 16px;
+  padding: 10px 17px;
   border-radius: 999px;
-  background: rgba(40, 45, 53, .95);
-  font-size: 14px;
-  font-weight: 600;
+  background: var(--fg);
+  color: var(--base);
+  font: 800 14px/1.2 var(--font);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transform: translate(-50%, 8px);
-  transition: opacity .2s, transform .2s;
+  transform: translate(-50%, 10px) scale(.9);
+  transition: opacity .2s, transform .3s var(--spring);
 }
 .lobby-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -1014,13 +1327,12 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
   z-index: 2500;
   top: calc(var(--safe-top) + 8px);
   right: calc(var(--safe-right) + 10px);
-  background: rgba(0, 0, 0, .3);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 
 /* ---------------------------------------------------------- game scenes */
 
+/* Everything a table needs comes from the tokens: the base it sits on, the
+   text on it, one highlight color, and chips for anything pressable. */
 .game-scene {
   --cw: 50px;
   --ch: 70px;
@@ -1032,9 +1344,9 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
   display: none;
   overflow: hidden;
   touch-action: none;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(70, 150, 105, .35) 0%, transparent 75%),
-    #12301f;
+  background: var(--base);
+  color: var(--fg);
+  font-family: var(--font);
 }
 body.route-game .game-scene.active { display: block; }
 /* A scene that just switched modes shows only its bar and the setup card until the deal. */
@@ -1051,15 +1363,14 @@ body.route-game .game-scene.active { display: block; }
   display: grid;
   place-items: center;
   border-radius: var(--card-radius);
-  border: 1.5px solid rgba(255, 255, 255, .16);
-  background: rgba(0, 0, 0, .12);
-  color: rgba(255, 255, 255, .2);
+  background: var(--chip);
+  color: var(--fg-3);
   font-size: calc(var(--cw) * .38);
-  font-weight: 800;
+  font-weight: 900;
 }
-.sol-slot-t { border-style: dashed; border-color: rgba(255, 255, 255, .1); background: none; color: rgba(255, 255, 255, .1); }
+.sol-slot-t { border: 1.5px dashed var(--rule); background: none; color: var(--rule); }
 .sol-recycle { opacity: 0; font-size: calc(var(--cw) * .5); transition: opacity .2s; }
-.sol-slot-s.can-recycle .sol-recycle { opacity: 1; color: rgba(255, 255, 255, .5); }
+.sol-slot-s.can-recycle .sol-recycle { opacity: 1; color: var(--fg-2); }
 
 /* Small cards: rank and suit side by side so a fanned column stays readable. */
 #solitaire .corner { width: auto; flex-direction: row; align-items: center; gap: calc(var(--cw) * .03); }
@@ -1071,18 +1382,6 @@ body.route-game .game-scene.active { display: block; }
 #solitaire .center { top: 30%; }
 #solitaire .center .suit-mark { width: 52%; }
 #solitaire .center.ace .suit-mark { width: 60%; }
-/* Colored backs so face-down cards read as face-down at a glance. */
-.game-scene .back {
-  background-color: #2f5fa8;
-  box-shadow: inset 0 0 0 calc(var(--cw) * .05) #f4f1e8, 0 1px 3px rgba(0, 0, 0, .3);
-}
-.game-scene .back-pattern {
-  inset: calc(var(--cw) * .05);
-  border-radius: calc(var(--card-radius) * .7);
-  background-size: calc(var(--cw) * .5) calc(var(--cw) * .5);
-  filter: brightness(0) invert(1);
-  opacity: .22;
-}
 
 .game-bar {
   position: absolute;
@@ -1092,13 +1391,20 @@ body.route-game .game-scene.active { display: block; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 calc(var(--safe-right) + 10px) 0 calc(var(--safe-left) + 10px);
+  padding: 0 calc(var(--safe-right) + 12px) 0 calc(var(--safe-left) + 12px);
   z-index: 6000;
 }
 .game-top { top: var(--safe-top); }
-.game-bottom { bottom: calc(var(--safe-bottom) + 6px); justify-content: center; }
-.game-title { flex: 1; font-size: 17px; font-weight: 800; }
-.game-stats { color: rgba(255, 255, 255, .7); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.game-bottom { bottom: calc(var(--safe-bottom) + 8px); justify-content: center; }
+.game-title { flex: 1; font-size: 17px; font-weight: 900; letter-spacing: -.03em; }
+.game-stats { color: var(--fg-2); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* In the top bar the status line needs every pixel: tighter type, and a more compact button next to it. */
+.game-top { gap: 7px; }
+/* A status that still doesn't fit wraps onto a second line instead of being cut off. */
+.game-top .game-stats { font-size: 12.5px; letter-spacing: -.01em; line-height: 1.15; white-space: normal; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.game-top .game-btn { padding: 8px 11px; font-size: 13px; }
+.game-top .bj-bank { font-size: 15px; }
+/* Anything pressable sits on a hard edge and sinks when pressed. */
 .game-icon {
   flex: none;
   display: grid;
@@ -1108,25 +1414,244 @@ body.route-game .game-scene.active { display: block; }
   padding: 0 0 3px;
   border: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, .25);
+  background: var(--chip);
+  color: var(--fg);
   font-size: 26px;
   line-height: 1;
+  box-shadow: 0 3px 0 var(--edge);
+  touch-action: manipulation;
+  transition: transform .2s var(--spring), box-shadow .2s var(--spring);
 }
+.game-icon:active { transform: translateY(3px); box-shadow: 0 0 0 var(--edge); transition-duration: .05s; }
 .game-btn {
-  padding: 9px 14px;
+  padding: 10px 15px;
   border: 0;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .3);
-  font-size: 14px;
-  font-weight: 700;
+  background: var(--chip);
+  color: var(--fg);
+  font: 800 14px/1.15 var(--font);
   white-space: nowrap;
+  box-shadow: 0 3px 0 var(--edge);
   touch-action: manipulation;
+  transition: transform .2s var(--spring), box-shadow .2s var(--spring), background-color .15s, opacity .2s;
 }
-.game-btn:hover { background: rgba(0, 0, 0, .42); }
-.game-btn:active { transform: scale(.95); }
-.game-btn:disabled { opacity: .35; pointer-events: none; }
-.game-btn.accent { background: var(--sel); color: #2b1d00; }
+.game-btn:hover { background: var(--chip-2); }
+.game-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--edge); transition-duration: .05s; }
+.game-btn:disabled { opacity: .4; pointer-events: none; box-shadow: none; }
+.game-btn.accent { background: var(--hi); color: var(--hi-fg); box-shadow: 0 3px 0 var(--hi-edge); }
+.game-btn.accent:hover { background: var(--hi); }
+.game-btn.accent:active { box-shadow: 0 0 0 var(--hi-edge); }
 .game-btn[hidden] { display: none; }
+
+/* The … menu: every game's options, and the exit, in the top right corner. */
+.game-icon[hidden], .game-bar[hidden] { display: none; }
+.gm-more { padding: 0; }
+.gm-more svg { width: 20px; height: 20px; fill: currentColor; }
+.gm-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 6400;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: none;
+}
+.gm-open .gm-scrim { display: block; }
+.gm-open .game-top { z-index: 6500; }
+/* A setup or result card dims the table, but the menu (and with it the exit) stays reachable above it. */
+.game-scene:has(> .game-win.show) > .game-top { z-index: 7100; }
+.game-scene:has(> .game-win.show) .hud-opps { visibility: hidden; }
+.game-scene:has(> .game-win.show) > :is(.gm-scrim, .gm-panel) { z-index: 7200; }
+.gm-panel {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--bar-h) + 2px);
+  right: calc(var(--safe-right) + 12px);
+  z-index: 6500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 172px;
+  padding: 6px;
+  border-radius: 20px;
+  transform-origin: calc(100% - 18px) 0;
+  transform: scale(.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .28s var(--spring), opacity .12s;
+}
+.gm-open .gm-panel { transform: none; opacity: 1; pointer-events: auto; }
+/* (#screen: some of these buttons were built as small bar buttons; in the menu they are all one size.) */
+#screen .gm-panel .game-btn {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: none;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  transform: none;
+}
+.gm-panel .game-btn:hover, .gm-panel .game-btn:active { background: var(--chip); }
+.gm-panel .gm-exit { color: var(--red); }
+
+/* ------------------------------------------------------------------ HUD
+   One layout for every game (hud.js): opponents top left, the … menu top right,
+   your avatar bottom right just above your hand, and every line of information
+   as a pill sliding out of it to the left. */
+
+/* Avatars: a name is drawn as a circle (hud.js sets data-av). You wear the
+   game's color, like the circle in the lobby; opponents wear its partner. */
+#screen [data-av] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0;
+  letter-spacing: 0;
+  animation: none;
+  vertical-align: middle;
+}
+#screen [data-av]::before {
+  content: attr(data-av);
+  flex: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 0 3px;
+  border-radius: 50%;
+  background: var(--p);
+  color: var(--on-p);
+  font: 700 12px/.95 var(--font);
+  letter-spacing: -.02em;
+  text-align: center;
+  white-space: normal;
+  vertical-align: 0;
+  transition: box-shadow .2s, scale .3s var(--spring);
+}
+#screen [data-av][data-av-long]::before { font-size: 10.5px; }
+#screen [data-av][data-av-long="2"]::before { font-size: 8.5px; letter-spacing: -.03em; }
+#screen [data-av][data-av-me]::before { background: var(--hi); color: var(--hi-fg); }
+#screen [data-av][data-av-rest]::after {
+  content: attr(data-av-rest);
+  color: var(--fg-2);
+  font: 700 12px/1.2 var(--font);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  text-align: left;
+}
+/* Whose turn it is: a ring around their circle. */
+#screen .rm-label.active [data-av]::before,
+#screen .hud-you.on::before { box-shadow: 0 0 0 2px var(--base), 0 0 0 4px var(--fg); scale: 1.06; }
+
+/* The top bar: opponents on the left, the menu on the right. */
+.hud .game-title { display: none; }
+.hud-opps { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px 12px; }
+#screen .hud-opps > * {
+  position: static;
+  transform: none !important;
+  rotate: none;
+  flex: none;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 7px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+  white-space: nowrap;
+  line-height: 1.2;
+  animation: none;
+}
+#screen .hud-opps > * > [data-av] { grid-row: 1 / span 2; }
+#screen .hud-opps > * > :not([data-av]) { grid-column: 2; align-self: end; color: var(--fg-2); font-size: 12px; font-weight: 700; }
+#screen .hud-opps > * > :not([data-av]) ~ :not([data-av]) { align-self: start; }
+#screen .hud-opps > * > :not([data-av]):last-child:nth-child(2) { grid-row: 1 / span 2; align-self: center; }
+#screen .hud-opps > [data-av] { display: inline-flex; }
+/* A crowded table: smaller circles, and the detail wraps under itself. */
+#screen .hud-opps:has(> :nth-child(3)) { gap: 4px 9px; }
+#screen .hud-opps:has(> :nth-child(3)) [data-av]::before { width: 32px; height: 32px; font-size: 10.5px; }
+#screen .hud-opps:has(> :nth-child(3)) > * { column-gap: 5px; white-space: normal; max-width: 31%; font-size: 10.5px; }
+#screen .hud-opps:has(> :nth-child(3)) > * > :not([data-av]) { font-size: 10.5px; line-height: 1.1; }
+#screen .hud-opps:has(> :nth-child(4)) { flex-wrap: wrap; }
+
+/* Your corner: the avatar, and the pills that come out of it. */
+.hud-me {
+  position: absolute;
+  right: calc(var(--safe-right) + 12px);
+  left: calc(var(--safe-left) + 12px);
+  bottom: var(--hud-b, 214px);
+  z-index: 5;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+.hud-seats .hud-you, #screen .hud-gone { display: none; }
+.hud-pills {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  display: flex;
+  flex-flow: row-reverse wrap-reverse;
+  align-items: center;
+  gap: 5px;
+}
+#screen .hud-pill {
+  position: static;
+  transform: none !important;
+  flex: 0 1 auto;
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 17px;
+  background: var(--chip);
+  box-shadow: none;
+  color: var(--fg);
+  font: 700 13px/1.2 var(--font);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  white-space: normal;
+  overflow: visible;
+  opacity: 1;
+  transform-origin: 100% 50%;
+}
+#screen .hud-pill:empty, #screen .hud-pill:is(.gf-hint, .sj-hint):not(.show) { display: none; }
+/* Three weights of information. The status line is the loud one (and takes the
+   game's color when it is your move); your own numbers are an outline; hints
+   are the quietest, and wrap evenly when they have to. */
+#screen .hud-pill.mine { background: var(--hi); color: var(--hi-fg); }
+#screen .hud-pill.mine::before { content: none; }
+#screen .hud-pill:is(.hud-mine, .gn-dw) { background: none; box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--fg-2); }
+#screen .hud-pill:is(.rm-hint, .gf-hint, .sj-hint) { background: color-mix(in srgb, var(--chip) 50%, var(--base)); color: var(--fg-2); font-weight: 500; text-align: right; text-wrap: balance; }
+#screen .hud-pill.sj-hint.slap { background: var(--hi); color: var(--hi-fg) !important; font-size: 15px; font-weight: 900; }
+.hud-out { animation: hud-out .42s var(--spring) backwards; }
+@keyframes hud-out {
+  from { translate: 26px 0; scale: .35 .7; opacity: 0; }
+  40% { opacity: 1; }
+}
+.bj-dealer-label[data-av] { padding: 0; background: none; }
+/* Where the row sits is one number per game: the default clears a hand and its row of buttons. */
+#solitaire { --hud-b: calc(var(--safe-bottom) + 8px + (var(--bar-h) - 38px) / 2); }
+#solitaire .game-bottom { justify-content: flex-start; }
+#war { --hud-b: 258px; }
+#palace { --hud-b: 310px; }
+#blackjack { --hud-b: 118px; }
+#speed .hud-me, #stress .hud-me { left: calc(var(--safe-left) + 80px); }
+/* Sideways there is one place for it in every game: low on the right, level with the top of the hand. */
+#device.landscape #screen .game-scene { --hud-b: 100px; }
+#device.landscape #screen .hud-me { left: 28%; }
+#device.landscape #screen .hud-pills { flex-wrap: nowrap; }
+#device.landscape #screen .hud-pill { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#device.landscape #screen .hud-pill:not(.rm-hint, .gf-hint, .sj-hint) { flex-shrink: 0; }
 
 .game-win {
   position: absolute;
@@ -1134,38 +1659,32 @@ body.route-game .game-scene.active { display: block; }
   z-index: 7000;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, .35);
+  background: var(--scrim);
   opacity: 0;
   pointer-events: none;
-  transition: opacity .3s;
+  transition: opacity .25s;
 }
 .game-win.show { opacity: 1; pointer-events: auto; }
+/* The result (or setup) card drops in with a little tilt. */
 .game-win-card {
-  padding: 24px 28px;
-  border-radius: 20px;
-  background: rgba(20, 23, 28, .92);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  max-width: calc(100% - 28px);
+  padding: 26px 26px 24px;
+  border-radius: 28px;
   text-align: center;
-  transform: scale(.9);
-  transition: transform .35s cubic-bezier(.3, 1.5, .5, 1);
+  transform: translateY(18px) scale(.8) rotate(-4deg);
+  transition: transform .45s var(--spring);
 }
 .game-win.show .game-win-card { transform: none; }
-.game-win-title { font-size: 26px; font-weight: 800; }
-.game-win-stats { margin: 4px 0 18px; color: var(--muted); font-size: 14px; }
+.game-win-title { font-size: 28px; font-weight: 900; letter-spacing: -.035em; line-height: 1.05; }
+.game-win-stats { margin: 6px 0 18px; color: var(--fg-2); font-size: 14px; font-weight: 500; }
 .game-win-actions { display: flex; gap: 8px; justify-content: center; }
 
 /* -------------------------------------------------------------------- war */
 
-#war {
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 50%, rgba(160, 70, 60, .28) 0%, transparent 75%),
-    #2a1716;
-}
 .war-cards { position: absolute; inset: 0; pointer-events: none; }
-#war .cpu-back .back { background-color: #b5413a; }
+#war .cpu-back { --back: var(--p); --back-fg: var(--on-p); }
 
-.war-label, .war-hint, .war-banner {
+.war-label, .war-banner {
   position: absolute;
   left: 0;
   top: 0;
@@ -1174,63 +1693,69 @@ body.route-game .game-scene.active { display: block; }
 }
 .war-label { display: flex; flex-direction: column; gap: 1px; z-index: 5000; }
 .war-name { font-size: 15px; font-weight: 800; }
-.war-count { color: rgba(255, 255, 255, .65); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.war-label-you .war-name { color: #8fb7ff; }
-.war-label-cpu .war-name { color: #ff9a8f; }
+.war-count { color: var(--fg-2); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.war-label-you .war-name { color: var(--you); }
+.war-label-cpu .war-name { color: var(--them); }
 #war:not(.landscape) .war-label { text-align: left; }
-
-.war-hint {
-  z-index: 5000;
-  color: rgba(255, 255, 255, .55);
-  font-size: 14px;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity .3s;
-}
-.war-hint.show { opacity: 1; animation: war-pulse 1.8s ease-in-out infinite; }
-@keyframes war-pulse { 50% { color: rgba(255, 255, 255, .85); } }
 
 .war-banner {
   z-index: 5500;
   padding: 8px 18px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .55);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--fg);
+  color: var(--base);
+  box-shadow: 0 0 0 3px var(--card), 0 5px 0 3px rgba(23, 20, 15, .16);
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 900;
+  letter-spacing: -.01em;
   opacity: 0;
-  scale: .7;
-  transition: opacity .18s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+  scale: .5;
+  rotate: -4deg;
+  transition: opacity .18s, scale .34s var(--spring), rotate .34s var(--spring);
 }
-.war-banner.show { opacity: 1; scale: 1; }
-.war-banner.you { color: #8fb7ff; }
-.war-banner.cpu { color: #ff9a8f; }
-.war-banner.war { background: var(--sel); color: #2b1d00; font-size: 24px; letter-spacing: .06em; }
+.war-banner.show { opacity: 1; scale: 1; rotate: 0deg; }
+/* A banner is emptied the moment it is dismissed: hide it at once, or a blank pill lingers while it fades. */
+:is(.war-banner, .bj-banner, .sd-banner, .c8-toast):empty { opacity: 0 !important; transition: none; }
+.war-banner.you { background: var(--blue); color: var(--card); }
+.war-banner.cpu { background: var(--red); color: var(--card); }
+.war-banner.war { background: var(--hi); color: var(--hi-fg); font-size: 24px; letter-spacing: .06em; }
 
 /* ----------------------------------------------------------- crazy eights */
 
 #crazy-eights {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(70, 110, 170, .3) 0%, transparent 75%),
-    #141c2c;
 }
-.game-scene .deck-stack { background-color: #2f5fa8; }
+.game-scene .deck-stack { background-color: var(--back); }
 .c8-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 .c8-sparkles { z-index: 4; }
 #crazy-eights.must-draw .deck-pile:not(.empty) .deck-stack { animation: c8-glow 1.4s ease-in-out infinite; }
 @keyframes c8-glow {
-  50% { box-shadow: 0 0 0 3px var(--sel), 0 0 22px rgba(255, 210, 87, .55), 0 10px 18px rgba(0, 0, 0, .28); }
+  50% { box-shadow: inset 0 0 0 calc(var(--cw) * .05) var(--card), 0 0 0 3px var(--base), 0 0 0 7px var(--fg); }
 }
-.c8-dim .front { filter: brightness(.72) saturate(.65); transition: filter .2s; }
+/* Cards you can't play right now fade back (toward the table, or toward the
+   card's own paper on a colored table) without losing their suit colors. */
+.front::after { content: ''; position: absolute; inset: 0; z-index: 2; background: var(--dim, var(--base)); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.c8-dim .front::after { opacity: var(--dim-by, .5); }
 .game-btn.small { padding: 7px 12px; font-size: 13px; }
 
 .c8-cpu-count, .c8-suit, .c8-toast { position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; }
 #crazy-eights .game-title { flex: none; white-space: nowrap; }
 .c8-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; transition: color .2s; }
-.c8-status.mine { color: var(--sel); }
-.c8-cpu-count { z-index: 3; color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 700; }
+.c8-status.mine { color: var(--fg); }
+/* "Your turn": a dot that beats in front of the status line. */
+:is(.c8-status, .gf-status, .hx-status).mine::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--mark);
+  vertical-align: 1px;
+  animation: turn-dot 1.2s ease-in-out infinite;
+}
+@keyframes turn-dot { 50% { transform: scale(1.5); } }
+.c8-cpu-count { z-index: 3; color: var(--fg-2); font-size: 12px; font-weight: 700; }
 .c8-suit {
   z-index: 3;
   display: grid;
@@ -1238,29 +1763,28 @@ body.route-game .game-scene.active { display: block; }
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--card-paper);
-  color: #000;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+  background: var(--card);
+  box-shadow: 0 0 0 1.5px var(--rule), 0 3px 0 rgba(23, 20, 15, .16);
   opacity: 0;
   scale: .4;
-  transition: opacity .2s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+  transition: opacity .2s, scale .34s var(--spring);
 }
-.c8-suit.red { color: var(--card-red); }
 .c8-suit.show { opacity: 1; scale: 1; }
 .c8-suit .suit-mark { width: 22px; }
 .c8-toast {
   z-index: 5500;
   padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .6);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--fg);
+  color: var(--base);
+  box-shadow: 0 0 0 3px var(--card), 0 5px 0 3px rgba(23, 20, 15, .16);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   opacity: 0;
-  transition: opacity .2s;
+  scale: .8;
+  transition: opacity .2s, scale .3s var(--spring);
 }
-.c8-toast.show { opacity: 1; }
+.c8-toast.show { opacity: 1; scale: 1; }
 
 .c8-picker {
   position: absolute;
@@ -1268,24 +1792,21 @@ body.route-game .game-scene.active { display: block; }
   z-index: 6500;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, .3);
+  background: var(--scrim);
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
 }
 .c8-picker.show { opacity: 1; pointer-events: auto; }
 .c8-picker-card {
-  padding: 18px 18px 20px;
-  border-radius: 20px;
-  background: rgba(20, 23, 28, .92);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  padding: 20px 20px 24px;
+  border-radius: 28px;
   text-align: center;
-  transform: scale(.9);
-  transition: transform .3s cubic-bezier(.3, 1.5, .5, 1);
+  transform: translateY(14px) scale(.8) rotate(-3deg);
+  transition: transform .4s var(--spring);
 }
 .c8-picker.show .c8-picker-card { transform: none; }
-.c8-picker-title { margin-bottom: 14px; font-size: 17px; font-weight: 800; }
+.c8-picker-title { margin-bottom: 14px; font-size: 18px; font-weight: 900; letter-spacing: -.02em; }
 .c8-picker-row { display: flex; gap: 10px; }
 .c8-suit-btn {
   display: grid;
@@ -1293,121 +1814,74 @@ body.route-game .game-scene.active { display: block; }
   width: 62px;
   height: 78px;
   border: 0;
-  border-radius: 10px;
-  background: var(--card-paper);
-  color: #000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 0 0 1.5px var(--rule), 0 4px 0 var(--edge);
   touch-action: manipulation;
-  transition: transform .12s;
+  transition: transform .2s var(--spring), box-shadow .2s var(--spring);
 }
-.c8-suit-btn.red { color: var(--card-red); }
 .c8-suit-btn:hover { transform: translateY(-3px); }
-.c8-suit-btn:active { transform: scale(.94); }
+.c8-suit-btn:active { transform: translateY(4px); box-shadow: 0 0 0 1.5px var(--rule), 0 0 0 var(--edge); transition-duration: .05s; }
 .c8-suit-btn .suit-mark { width: 34px; }
 
 /* ---------------------------------------------------------------- go fish */
 
 #go-fish {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(40, 150, 160, .3) 0%, transparent 75%),
-    #0f2428;
 }
 #go-fish .game-title { flex: none; white-space: nowrap; }
 .gf-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; transition: color .2s; }
-.gf-status.mine { color: var(--sel); }
+.gf-status.mine { color: var(--fg); }
 .gf-label, .gf-say, .gf-hint { position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; }
-.gf-label { z-index: 3; color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 700; }
+.gf-label { z-index: 3; color: var(--fg-2); font-size: 12px; font-weight: 700; }
 .gf-label-cpu { white-space: pre; text-align: right; line-height: 1.35; }
-.gf-hint { z-index: 3; color: rgba(255, 255, 255, .5); font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .3s; }
+.gf-hint { z-index: 3; color: var(--fg-3); font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .3s; }
 .gf-hint.show { opacity: 1; }
 .gf-say {
   z-index: 5500;
   padding: 8px 15px;
   border-radius: 16px;
   font-size: 15px;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  font-weight: 800;
+  box-shadow: 0 0 0 3px var(--card), 0 5px 0 3px rgba(23, 20, 15, .16);
   opacity: 0;
   scale: .7;
-  transition: opacity .18s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+  transition: opacity .18s, scale .34s var(--spring);
 }
 .gf-say.show { opacity: 1; scale: 1; }
-.gf-say-cpu { background: #ff9a8f; color: #3a0f0a; }
-.gf-say-you { background: #8fb7ff; color: #0a1a3a; }
-
-/* ----------------------------------------------------------------- hearts */
-
-#hearts {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(170, 60, 90, .28) 0%, transparent 75%),
-    #1f1220;
-}
-#hearts .game-title { flex: none; white-space: nowrap; }
-.hx-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; transition: color .2s; }
-.hx-status.mine { color: var(--sel); }
-.hx-deck { visibility: hidden; }
-.hx-label { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; white-space: nowrap; transition: color .2s; }
-.hx-label-3 { text-align: right; }
-.hx-name { font-size: 13px; font-weight: 800; color: rgba(255, 255, 255, .75); }
-.hx-pts { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .5); font-variant-numeric: tabular-nums; }
-.hx-label.active .hx-name { color: var(--sel); }
-.hx-label.active .hx-name::before { content: '● '; font-size: 9px; vertical-align: 2px; }
-.hx-pass {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5200;
-  display: none;
-  padding: 11px 20px;
-  font-size: 15px;
-}
-.hx-pass.show { display: block; }
-.hx-pass:disabled { opacity: .55; pointer-events: none; background: rgba(0, 0, 0, .45); color: var(--text); }
-.hx-new .front { box-shadow: 0 0 0 calc(var(--cw) * .03) #8fb7ff, 0 0 calc(var(--cw) * .14) rgba(143, 183, 255, .5); }
-.hx-scores { margin: 8px auto 6px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.hx-scores th { padding: 2px 12px; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.hx-scores td { padding: 4px 12px; font-size: 15px; text-align: right; }
-.hx-scores td:first-child { text-align: left; font-weight: 700; }
-.hx-scores tr.me td { color: #8fb7ff; }
-.hx-scores tr.low td:last-child { color: var(--accent); font-weight: 800; }
+.gf-say-cpu { background: var(--red); color: var(--card); }
+.gf-say-you { background: var(--blue); color: var(--card); }
 
 /* -------------------------------------------------------------- blackjack */
 
-#blackjack {
-  background:
-    radial-gradient(ellipse 85% 60% at 50% 38%, rgba(40, 140, 90, .45) 0%, transparent 75%),
-    #0d2a1c;
-}
 #blackjack .game-title { flex: none; white-space: nowrap; }
-.bj-bank { flex: 1; text-align: right; color: var(--sel); font-size: 15px; font-weight: 800; }
+.bj-bank { flex: 1; text-align: right; font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .bj-shoe { left: 0; top: 0; }
 .bj-label, .bj-banner, .bj-rules { position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; }
-.bj-label { z-index: 3; padding: 3px 10px; border-radius: 999px; background: rgba(0, 0, 0, .35); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bj-label { z-index: 3; padding: 3px 10px; border-radius: 999px; background: var(--chip); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .bj-dealer-label:empty { display: none; }
-.bj-hand-label.active { background: var(--sel); color: #2b1d00; }
-.bj-hand-label.r-win, .bj-hand-label.r-blackjack { background: var(--accent); color: #062a1a; }
-.bj-hand-label.r-lose, .bj-hand-label.r-bust { background: rgba(217, 87, 66, .9); color: #fff; }
-.bj-hand-label.r-push { background: rgba(255, 255, 255, .85); color: #222; }
+.bj-hand-label.active { background: var(--hi); color: var(--hi-fg); }
+.bj-hand-label.r-win, .bj-hand-label.r-blackjack { background: var(--green); color: var(--card); }
+.bj-hand-label.r-lose, .bj-hand-label.r-bust { background: var(--red); color: var(--card); }
+.bj-hand-label.r-push { background: var(--fg); color: var(--base); }
 .bj-banner {
   z-index: 5500;
   padding: 9px 20px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .6);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--fg);
+  color: var(--base);
+  box-shadow: 0 0 0 3px var(--card), 0 5px 0 3px rgba(23, 20, 15, .16);
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
   opacity: 0;
   scale: .7;
-  transition: opacity .18s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+  transition: opacity .18s, scale .34s var(--spring);
 }
 .bj-banner.show { opacity: 1; scale: 1; }
-.bj-banner.win { color: var(--accent); }
-.bj-banner.lose { color: #ff9a8f; }
-.bj-banner.info { color: var(--muted); font-size: 15px; }
-.bj-rules { z-index: 2; color: rgba(255, 255, 255, .35); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: 0; transition: opacity .3s; }
+.bj-banner.win { background: var(--green); color: var(--card); }
+.bj-banner.lose { background: var(--red); color: var(--card); }
+.bj-banner.info { font-size: 15px; }
+.bj-rules { z-index: 2; white-space: normal; width: 44%; text-align: center; line-height: 1.5; color: var(--fg-3); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; opacity: 0; transition: opacity .3s; }
 .bj-rules.show { opacity: 1; }
 
 .bj-controls {
@@ -1422,7 +1896,7 @@ body.route-game .game-scene.active { display: block; }
   gap: 8px;
   padding: 0 calc(var(--safe-right) + 10px) 0 calc(var(--safe-left) + 10px);
 }
-.bj-betline { color: rgba(255, 255, 255, .7); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bj-betline { color: var(--fg-2); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .bj-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .bj-row .game-btn { padding: 11px 16px; font-size: 15px; }
 .bj-row .game-btn.small { padding: 8px 12px; font-size: 13px; }
@@ -1430,52 +1904,55 @@ body.route-game .game-scene.active { display: block; }
 .bj-chip {
   width: 46px;
   height: 46px;
-  border: 0;
+  border: 3px dashed var(--card);
   border-radius: 50%;
-  color: #fff;
+  color: var(--card);
   font-size: 13px;
   font-weight: 900;
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .85), inset 0 0 0 7px rgba(0, 0, 0, .15), 0 3px 8px rgba(0, 0, 0, .4);
+  box-shadow: 0 4px 0 rgba(23, 20, 15, .22);
   touch-action: manipulation;
-  transition: transform .12s, opacity .2s;
+  transition: transform .2s var(--spring), box-shadow .2s var(--spring), opacity .2s;
 }
 .bj-chip:hover { transform: translateY(-2px); }
-.bj-chip:active { transform: scale(.92); }
+.bj-chip:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(23, 20, 15, .22); transition-duration: .05s; }
 .bj-chip:disabled { opacity: .35; pointer-events: none; }
 .bj-chip[hidden] { display: none; }
-.bj-chip-10 { background: #3d6fd1; }
-.bj-chip-25 { background: #2f9a5a; }
-.bj-chip-50 { background: #c4473a; }
-.bj-chip-100 { background: #222; }
+.bj-chip-10 { background: var(--blue); }
+.bj-chip-25 { background: var(--green); }
+.bj-chip-50 { background: var(--red); }
+.bj-chip-100 { background: var(--yellow); color: var(--ink-c); }
 
-/* -------------------------------------------------------------- rummy 500 */
+/* ------------------------------------ shared by the hand games (rm-, hx-) */
 
-#rummy-500 {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(200, 140, 40, .26) 0%, transparent 75%),
-    #1e1a10;
-}
-#rummy-500 .game-title { flex: none; white-space: nowrap; }
+.hx-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; transition: color .2s; }
+.hx-status.mine { color: var(--fg); }
+.hx-deck { visibility: hidden; }
+.hx-scores { margin: 8px auto 6px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.hx-scores th { padding: 2px 12px; color: var(--fg-2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.hx-scores td { padding: 4px 12px; font-size: 15px; text-align: right; }
+.hx-scores td:first-child { text-align: left; font-weight: 700; }
+.hx-scores tr.me td { color: var(--you); }
+.hx-scores tr.low td:last-child { color: var(--green); font-weight: 800; }
+.cb-toast { white-space: normal; max-width: 90%; text-align: center; }
 .rm-stock { transform-origin: 50% 50%; }
 .rm-label, .rm-row-label, .rm-hint, .rm-actions { position: absolute; left: 0; top: 0; z-index: 3; white-space: nowrap; }
 .rm-label { pointer-events: none; text-align: center; }
-.rm-name { font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .8); }
-.rm-sub { font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, .5); font-variant-numeric: tabular-nums; }
-.rm-label.active .rm-name { color: var(--sel); }
-.rm-label.active .rm-name::before { content: '● '; font-size: 8px; vertical-align: 2px; }
-.rm-row-label { pointer-events: none; color: rgba(255, 255, 255, .45); font-size: 11px; font-weight: 700; }
-.rm-hint { pointer-events: none; color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 600; }
+.rm-name { font-size: 12px; font-weight: 800; color: var(--fg); }
+.rm-sub { font-size: 11px; font-weight: 700; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.rm-label.active .rm-name { color: var(--fg); }
+.rm-label.active .rm-name::before { content: '● '; font-size: 8px; vertical-align: 2px; color: var(--mark); }
+.rm-row-label { pointer-events: none; color: var(--fg-3); font-size: 11px; font-weight: 700; }
+.rm-hint { pointer-events: none; color: var(--fg-2); font-size: 12px; font-weight: 500; }
 .rm-actions { z-index: 5200; display: flex; gap: 6px; }
 .rm-actions .game-btn:disabled { opacity: .35; }
 .rm-toast { z-index: 5500; }
-.rm-must .front { box-shadow: 0 0 0 calc(var(--cw) * .035) #8fb7ff, 0 0 calc(var(--cw) * .16) rgba(143, 183, 255, .6); }
+.rm-must .front { box-shadow: 0 0 0 calc(var(--cw) * .02) var(--base), 0 0 0 calc(var(--cw) * .055) var(--you); }
 .rm-count { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0 8px; }
 .rm-count-label { font-weight: 800; }
-.rm-count-opts { grid-template-columns: repeat(3, 1fr); margin: 0; border-color: rgba(255, 255, 255, .8); }
+.rm-count-opts { grid-template-columns: repeat(3, 1fr); margin: 0; }
 .rm-count-opts::before { display: none; }
-.rm-count-opts .gs-toggle-btn { color: #fff; min-width: 48px; }
-.rm-count-opts .gs-toggle-btn[aria-checked="true"] { background: var(--sel); color: #2b1d00; }
+.rm-count-opts .gs-toggle-btn { min-width: 48px; }
+.rm-count-opts .gs-toggle-btn[aria-checked="true"] { background: var(--hi); color: var(--hi-fg); }
 /* Pass-and-play cover: fully opaque so nobody sees the last hand. */
 .rm-handoff {
   position: absolute;
@@ -1486,89 +1963,29 @@ body.route-game .game-scene.active { display: block; }
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: #1e1a10;
+  background: var(--base);
   text-align: center;
 }
 .rm-handoff.show { display: flex; }
-.rm-handoff-title { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
-.rm-handoff-sub { margin-bottom: 14px; color: var(--muted); font-size: 15px; }
+.rm-handoff-title { font-size: 32px; font-weight: 900; letter-spacing: -.035em; }
+.rm-handoff-sub { margin-bottom: 14px; color: var(--fg-2); font-size: 15px; }
 
-/* --------------------------------------------------------------- shithead */
+/* ----------------------------------------------------------------- palace */
 
-#shithead {
+#palace {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 45%, rgba(190, 110, 60, .26) 0%, transparent 75%),
-    #22160f;
 }
-#shithead .game-title { flex: none; white-space: nowrap; }
-.sh-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
-.sh-handoff { background: #22160f; }
+.sh-pile-info { font-size: 12px; color: var(--fg-2); }
+.sh-handoff { background: var(--base); }
 .rm-actions .game-btn[hidden] { display: none; }
-
-/* ----------------------------------------------------------------- spades */
-
-#spades {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(90, 120, 190, .28) 0%, transparent 75%),
-    #121726;
-}
-#spades .game-title { flex: none; white-space: nowrap; }
-.sp-score { flex: 1; min-width: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
-.sp-label { text-align: left; }
-.sp-label.right { text-align: right; }
-.sp-label.mate .rm-name { color: #8fb7ff; }
-.sp-status { z-index: 3; }
-.sp-handoff { background: #121726; }
-.sp-bid {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5600;
-  width: min(330px, calc(100% - 24px));
-  padding: 14px 14px 16px;
-  border-radius: 20px;
-  background: rgba(20, 23, 28, .94);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
-  text-align: center;
-  opacity: 0;
-  pointer-events: none;
-  scale: .9;
-  transition: opacity .2s, scale .3s cubic-bezier(.3, 1.5, .5, 1);
-}
-.sp-bid.show { opacity: 1; pointer-events: auto; scale: 1; }
-.sp-bid-title { font-size: 18px; font-weight: 800; }
-.sp-bid-info { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
-.sp-bid-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.sp-bid-btn {
-  padding: 9px 0;
-  border: 0;
-  border-radius: 10px;
-  background: #262b34;
-  font-size: 15px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  touch-action: manipulation;
-}
-.sp-bid-btn:hover { background: #313844; }
-.sp-bid-btn:active { transform: scale(.94); }
-.sp-bid-btn.nil { background: var(--sel); color: #2b1d00; font-size: 13px; }
-.sp-scores td:nth-child(2) { font-size: 13px; }
 
 /* ------------------------------------------------------------------ speed */
 
-#speed {
+#speed, #stress {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(220, 80, 60, .3) 0%, transparent 75%),
-    #1f1012;
 }
-#speed .game-title { flex: none; white-space: nowrap; }
-#speed.sd-bad { animation: sd-bad .3s; }
-@keyframes sd-bad { 30% { box-shadow: inset 0 0 0 4px rgba(255, 90, 80, .7); } }
+:is(#speed, #stress).sd-bad { animation: sd-bad .3s; }
+@keyframes sd-bad { 20% { translate: -6px 0; } 30% { box-shadow: inset 0 0 0 6px var(--them); } 45% { translate: 5px 0; } 70% { translate: -2px 0; } }
 .sd-clock { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
 .sd-stock { transform-origin: 50% 50%; }
 .sd-label { text-align: left; }
@@ -1579,120 +1996,78 @@ body.route-game .game-scene.active { display: block; }
   position: absolute;
   left: 0;
   top: 0;
+  translate: -50% -50%;
   z-index: 5500;
   padding: 10px 22px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .6);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--fg);
+  color: var(--base);
+  box-shadow: 0 0 0 3px var(--card), 0 5px 0 3px rgba(23, 20, 15, .16);
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
   scale: .6;
-  transition: opacity .15s, scale .3s cubic-bezier(.3, 1.6, .5, 1);
+  transition: opacity .15s, scale .34s var(--spring);
 }
 .sd-banner.show { opacity: 1; scale: 1; }
-.sd-banner.count { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; font-size: 84px; font-weight: 900; color: #fff; text-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
-.sd-banner.go { background: var(--sel); color: #2b1d00; font-size: 34px; font-weight: 900; }
-.sd-banner.info { color: var(--muted); font-size: 15px; }
-
-/* ---------------------------------------------------- beggar-my-neighbour */
-
-#beggar {
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 50%, rgba(150, 80, 180, .3) 0%, transparent 75%),
-    #1c1124;
-}
-#beggar .game-title { flex: none; white-space: nowrap; }
-.bg-stats { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
-.bg-label { text-align: left; }
-.bg-label.right { text-align: right; }
-.bg-hint { z-index: 5000; }
-.bg-banner.court { background: var(--sel); color: #2b1d00; font-size: 16px; }
-
-/* --------------------------------------------------------------- cribbage */
-
-#cribbage {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 50%, rgba(170, 120, 60, .26) 0%, transparent 75%),
-    #1d160e;
-}
-#cribbage .game-title { flex: none; white-space: nowrap; }
-.cb-handoff { background: #1d160e; }
-/* Peg board: a wooden strip with two lanes of holes in groups of five. */
-.cb-board {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 3;
+/* The countdown: 3, 2, 1, Go, each in a circle and each in the next color of the
+   palette. The number sits dead center, and the circle grows from its center. */
+.sd-banner:is(.count, .go) {
   display: grid;
-  gap: 4px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #8a5a2b, #6e4520);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 4px 12px rgba(0, 0, 0, .35);
-  pointer-events: none;
-}
-.cb-lane { display: grid; grid-template-columns: 74px 1fr 30px; align-items: center; gap: 6px; }
-.cb-name { font-size: 11px; font-weight: 800; color: rgba(255, 240, 220, .85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cb-score { font-size: 13px; font-weight: 900; color: #fff3e0; text-align: right; font-variant-numeric: tabular-nums; }
-.cb-track {
-  position: relative;
-  height: 10px;
-  border-radius: 5px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, .5) 1.2px, transparent 1.6px) 0 50% / calc(100% / 24.2) 10px repeat-x,
-    rgba(0, 0, 0, .18);
-}
-.cb-peg {
-  position: absolute;
-  top: 50%;
-  width: 11px;
-  height: 11px;
-  margin-left: -5.5px;
+  place-items: center;
+  box-sizing: border-box;
+  width: 136px;
+  height: 136px;
+  padding: 0;
   border-radius: 50%;
-  transform: translateY(-50%);
-  background: #e8483b;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .5), inset 0 -2px 0 rgba(0, 0, 0, .2);
-  transition: left .6s cubic-bezier(.3, 1.2, .5, 1);
+  line-height: 1;
+  letter-spacing: 0;
+  transform-origin: 50% 50%;
+  color: var(--card);
 }
-.cb-lane.p2 .cb-peg { background: #3d7fd9; }
-.cb-peg.back { opacity: .55; }
-.cb-lane.mine .cb-name { color: #fff; }
-.cb-count { position: absolute; left: 0; top: 0; z-index: 3; font-size: 15px; font-weight: 900; color: #fff3e0; pointer-events: none; font-variant-numeric: tabular-nums; }
-.cb-count:empty { display: none; }
-.cb-crib-label, .cb-starter-label { font-size: 10px; }
-.cb-toast { white-space: normal; max-width: 90%; text-align: center; }
-.cb-show {
+.sd-banner.count { font-size: 84px; font-weight: 900; }
+.sd-banner.count.n3 { background: var(--red); }
+.sd-banner.count.n2 { background: var(--yellow); color: var(--ink-c); }
+.sd-banner.count.n1 { background: var(--green); }
+.sd-banner.go { background: var(--blue); font-size: 40px; font-weight: 900; }
+.sd-banner.info { font-size: 15px; }
+/* Stress: your pile's count sits above it (the pile is low, at the corner of
+   your hand), your avatar is lower too, and your money is the loud pill. */
+#stress { --hud-b: 150px; }
+#stress .st-mine .deck-count { top: auto; bottom: 100%; margin: 0 0 calc(7px / var(--ps, 1)); }
+#stress .hud-pill.hud-mine { background: var(--chip); box-shadow: none; color: var(--fg); font-size: 15px; }
+#stress .hud-opps .rm-sub { color: var(--fg); font-size: 15px; }
+/* The setup card: just the three difficulties, stacked. Picking one starts the game. */
+.st-levels { display: flex; flex-direction: column; gap: 10px; min-width: 210px; margin-top: 18px; }
+.st-levels .game-btn { padding: 15px 20px; font-size: 18px; }
+/* The reminder under the middle piles; the call button pops up in its place while they match. */
+.st-tip { opacity: 0; transition: opacity .2s; font-size: 12px; color: var(--fg-2); }
+.st-tip.show { opacity: 1; }
+.st-call {
   position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5200;
-  display: none;
-  width: min(340px, calc(100% - 24px));
-  padding: 10px 14px 12px;
-  border-radius: 16px;
-  background: rgba(20, 23, 28, .9);
-  text-align: center;
+  z-index: 5600;
+  padding: 14px 26px;
+  font-size: 22px;
+  font-weight: 900;
+  translate: -50% -50%;
+  scale: .4;
+  opacity: 0;
+  pointer-events: none;
+  transition: scale .22s var(--spring), opacity .1s, transform .2s var(--spring), box-shadow .2s var(--spring);
 }
-.cb-show.show { display: block; }
-.cb-show-title { font-size: 17px; font-weight: 900; }
-.cb-show-body { margin: 4px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.st-call.show { scale: 1; opacity: 1; pointer-events: auto; animation: st-call .5s ease-in-out .25s infinite alternate; }
+@keyframes st-call { to { scale: 1.08; } }
 
 /* ----------------------------------------------------------------- casino */
 
 #casino {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(40, 160, 120, .3) 0%, transparent 75%),
-    #0d1f1a;
 }
 #casino .game-title { flex: none; white-space: nowrap; }
 .cs-score { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cs-handoff { background: #0d1f1a; }
+.cs-handoff { background: var(--base); }
 .cs-opp { text-align: right; }
 .cs-badges { position: absolute; inset: 0; z-index: 2500; pointer-events: none; }
 .cs-badge {
@@ -1701,194 +2076,46 @@ body.route-game .game-scene.active { display: block; }
   top: 0;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #3d7fd9;
-  color: #fff;
+  background: var(--blue);
+  color: var(--card);
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+  box-shadow: 0 0 0 2px var(--card);
 }
-.cs-badge.mine { background: var(--sel); color: #2b1d00; }
-.cs-picked .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .14) rgba(255, 210, 87, .5); }
-.cs-could .front { box-shadow: 0 0 0 calc(var(--cw) * .025) rgba(143, 220, 190, .9); }
-.cs-scores td:first-child { font-weight: 600; font-size: 13px; }
+.cs-badge.mine { background: var(--hi); color: var(--hi-fg); }
+.cs-picked .front { box-shadow: 0 0 0 calc(var(--cw) * .02) var(--base), 0 0 0 calc(var(--cw) * .055) var(--fg); }
+.cs-could .front { box-shadow: 0 0 0 calc(var(--cw) * .035) var(--green); }
+.cs-scores td:first-child { font-weight: 500; font-size: 13px; }
 .cs-hint-right { text-align: right; }
-
-/* ----------------------------------------------------------------- euchre */
-
-#euchre {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(70, 110, 190, .3) 0%, transparent 75%),
-    #111a2c;
-}
-#euchre .game-title { flex: none; white-space: nowrap; }
-#euchre .sp-handoff { background: #111a2c; }
-.eu-trump { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--card-paper); color: #000; }
-.eu-trump:empty { display: none; }
-.eu-trump .suit-mark { width: 15px; }
-.eu-suit { display: inline-grid; place-items: center; vertical-align: -3px; color: #fff; }
-.eu-suit.red { color: #ff7d6b; }
-.eu-suit .suit-mark { width: 18px; }
-.eu-bid-row { display: flex; justify-content: center; gap: 8px; margin: 4px 0 10px; }
-.eu-bid-row .sp-bid-btn { min-width: 84px; padding: 11px 14px; }
-.eu-bid-row .sp-bid-btn:disabled { opacity: .35; }
-.eu-suit-btn { min-width: 58px !important; background: var(--card-paper) !important; }
-.eu-suit-btn .eu-suit { color: #000; }
-.eu-suit-btn .eu-suit.red { color: var(--card-red); }
-.eu-suit-btn .suit-mark { width: 24px; }
-.eu-alone { padding: 5px 12px; border: 1.5px solid rgba(255, 255, 255, .3); border-radius: 999px; background: none; color: var(--muted); font-size: 12px; font-weight: 700; }
-.eu-alone[aria-pressed="true"] { border-color: var(--sel); background: var(--sel); color: #2b1d00; }
-.eu-out { opacity: .35; }
-
-/* ------------------------------------------------------------------ poker */
-
-#poker {
-  --card-radius: calc(var(--cw) * .15);
-  background: #0b1712;
-}
-#poker .game-title { flex: none; white-space: nowrap; }
-.pk-blinds { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pk-felt {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 40%, #2f8a57 0%, #1d5a3a 60%, #144229 100%);
-  box-shadow: inset 0 0 0 6px #5a3a20, inset 0 0 0 8px rgba(0, 0, 0, .35), 0 12px 40px rgba(0, 0, 0, .5);
-  pointer-events: none;
-}
-#poker .pk-handoff { background: #0b1712; }
-.pk-seats { position: absolute; inset: 0; z-index: 2400; pointer-events: none; }
-.pk-seat {
-  position: absolute;
-  left: 0;
-  top: 0;
-  min-width: 64px;
-  padding: 3px 8px 4px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, .55);
-  text-align: center;
-  white-space: nowrap;
-  transition: opacity .2s, box-shadow .2s;
-}
-.pk-seat.me { background: none; }
-.pk-seat.turn { box-shadow: 0 0 0 2px var(--sel); }
-.pk-seat.folded, .pk-seat.busted { opacity: .45; }
-.pk-name { font-size: 11px; font-weight: 800; color: rgba(255, 255, 255, .85); }
-.pk-stack { font-size: 12px; font-weight: 800; color: var(--sel); font-variant-numeric: tabular-nums; }
-.pk-status { font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, .6); min-height: 12px; }
-.pk-bet, .pk-button {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  transition: opacity .2s;
-}
-.pk-bet {
-  padding: 2px 7px 2px 18px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .45);
-  font-size: 11px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.pk-bet::before {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin-top: -6px;
-  border-radius: 50%;
-  background: #c4473a;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .8);
-}
-.pk-bet.show, .pk-button.show { opacity: 1; }
-.pk-button { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #f4f1e8; color: #111; font-size: 10px; font-weight: 900; box-shadow: 0 2px 4px rgba(0, 0, 0, .4); }
-.pk-pot { position: absolute; left: 0; top: 0; z-index: 2400; padding: 3px 10px; border-radius: 999px; background: rgba(0, 0, 0, .4); font-size: 13px; font-weight: 800; color: #fff3d6; pointer-events: none; font-variant-numeric: tabular-nums; }
-.pk-pot:empty { display: none; }
-.pk-myhand { position: absolute; left: 0; top: 0; z-index: 2400; padding: 2px 10px; border-radius: 999px; background: rgba(0, 0, 0, .55); font-size: 12px; font-weight: 800; pointer-events: none; }
-.pk-myhand:empty { display: none; }
-.pk-toast { z-index: 5500; white-space: normal; max-width: 92%; text-align: center; }
-.pk-toast-side { max-width: 30%; text-align: left; }
-.pk-win .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .16) rgba(255, 210, 87, .6); }
-.pk-actions {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5200;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: min(360px, calc(100% - 20px));
-  padding: 8px 10px;
-  border-radius: 16px;
-  background: rgba(10, 14, 12, .82);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-.pk-actions.show { display: flex; }
-.pk-actions.side { width: 236px; }
-.pk-actions [hidden] { display: none !important; }
-.pk-row { display: flex; gap: 6px; width: 100%; }
-.pk-row .game-btn { flex: 1; padding: 10px 6px; font-size: 14px; }
-.pk-fold { background: rgba(217, 87, 66, .25) !important; }
-.pk-sizer { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-.pk-quick { display: flex; gap: 4px; }
-.pk-quick .game-btn { flex: 1; padding: 5px 0; font-size: 12px; }
-.pk-slider { width: 100%; accent-color: var(--sel); touch-action: pan-x; }
-.pk-count { grid-template-columns: repeat(5, 1fr); }
-.pk-count .gs-toggle-btn { min-width: 38px; }
 
 /* -------------------------------------------------------------- gin rummy */
 
 #gin {
   --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(180, 70, 90, .26) 0%, transparent 75%),
-    #1e1015;
 }
 #gin .game-title { flex: none; white-space: nowrap; }
 .gn-score { flex: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.gn-handoff { background: #1e1015; }
+.gn-handoff { background: var(--base); }
 .gn-opp { text-align: right; }
-.gn-dw { position: absolute; left: 0; top: 0; z-index: 3; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .4); font-size: 12px; font-weight: 800; pointer-events: none; }
+.gn-dw { position: absolute; left: 0; top: 0; z-index: 3; padding: 4px 10px; border-radius: 999px; background: var(--chip); font-size: 12px; font-weight: 800; pointer-events: none; }
 .gn-dw:empty { display: none; }
 .gn-actions .game-btn[hidden] { display: none; }
 /* Meld cards: a green band along the top edge (the bottom is hidden below the screen). */
-.gn-meld .front { box-shadow: inset 0 calc(var(--cw) * .06) 0 #3fcf86, 0 1px 3px rgba(0, 0, 0, .16), 0 3px 7px rgba(0, 0, 0, .12); }
+.gn-meld .front { box-shadow: inset 0 0 0 1px rgba(23, 20, 15, .1), inset 0 calc(var(--cw) * .06) 0 var(--green), 0 calc(var(--cw) * .028) 0 var(--shade); }
 .gn-glow .deck-stack { animation: c8-glow 1.4s ease-in-out infinite; }
 .gn-line { margin: 2px 0; }
 
-/* -------------------------------------------------------------- president */
-
-#president {
-  --card-radius: calc(var(--cw) * .15);
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(90, 100, 200, .28) 0%, transparent 75%),
-    #12142a;
-}
-#president .game-title { flex: none; white-space: nowrap; }
-.pr-handoff { background: #12142a; }
-.pr-label .rm-name { font-size: 11px; }
-.pr-label .rm-sub { font-size: 10px; }
-.pr-pile-info { font-size: 12px; color: rgba(255, 255, 255, .6); }
-.pr-you { position: absolute; left: 0; top: 0; z-index: 3; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, .75); pointer-events: none; }
-#president .rm-actions .game-btn[hidden] { display: none; }
-
 /* --------------------------------------------------------------- slapjack */
 
-#slapjack {
-  background:
-    radial-gradient(ellipse 75% 50% at 50% 50%, rgba(220, 110, 60, .3) 0%, transparent 75%),
-    #22130d;
-}
 #slapjack .game-title { flex: none; white-space: nowrap; }
+.bg-stats { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.bg-label { text-align: left; }
+.bg-label.right { text-align: right; }
 #slapjack.sj-bad { animation: sd-bad .3s; }
-.sj-divider { position: absolute; left: 6%; right: 6%; height: 0; border-top: 1px dashed rgba(255, 255, 255, .14); display: none; pointer-events: none; }
+.sj-divider { position: absolute; left: 6%; right: 6%; height: 0; border-top: 1px dashed var(--rule); display: none; pointer-events: none; }
 #slapjack.sj-multi .sj-divider { display: block; }
-.sj-jack .front { box-shadow: 0 0 0 calc(var(--cw) * .04) var(--sel), 0 0 calc(var(--cw) * .3) rgba(255, 210, 87, .7); }
+.sj-jack .front { box-shadow: 0 0 0 calc(var(--cw) * .02) var(--base), 0 0 0 calc(var(--cw) * .055) var(--fg); }
 .sj-slap {
   position: absolute;
   left: 0;
@@ -1899,13 +2126,72 @@ body.route-game .game-scene.active { display: block; }
   pointer-events: none;
   opacity: 0;
   scale: 1.6;
-  transition: opacity .12s, scale .18s cubic-bezier(.3, 1.5, .5, 1);
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5));
+  /* The hand is drawn as a flat silhouette in the text color. */
+  color: transparent;
+  text-shadow: 0 0 0 var(--fg);
+  transition: opacity .12s, scale .22s var(--spring);
 }
 .sj-slap.show { opacity: 1; scale: 1; }
-.sj-slap.bad { filter: drop-shadow(0 0 12px rgba(255, 80, 70, .9)); }
-.sj-banner.bad { color: #ff9a8f; }
-.sj-hint.slap { color: var(--sel) !important; font-size: 18px; font-weight: 900; animation: none; }
+.sj-slap.bad { text-shadow: 0 0 0 var(--them); }
+.sj-banner.bad { background: var(--red); color: var(--card); }
+.sj-hint { position: absolute; left: 0; top: 0; z-index: 5000; pointer-events: none; white-space: nowrap; color: var(--fg-2); font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .3s; }
+.sj-hint.show { opacity: 1; }
+.sj-hint.slap { color: var(--fg) !important; font-size: 18px; font-weight: 900; animation: none; }
+
+/* -------------------------------------------------------------- game feel */
+
+/* The canvas fx.js draws confetti and bursts on: above the table, under nothing that needs a tap. */
+#fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2640; pointer-events: none; }
+/* A score that went up pops (and fx.js floats "+3" off it); one that went down dips. */
+.fx-up, .fx-down { display: inline-block; }
+.fx-up { animation: fx-up .5s var(--spring); }
+.fx-down { animation: fx-down .36s ease-out; }
+@keyframes fx-up { 30% { scale: 1.32; } }
+@keyframes fx-down { 40% { scale: .86; opacity: .55; } }
+.fx-float {
+  position: absolute;
+  z-index: 2645;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--base);
+  font: 700 14px/1.2 var(--font);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fx-float .95s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+@keyframes fx-float {
+  0% { opacity: 0; transform: translate(0, -50%) scale(.5); }
+  18% { opacity: 1; transform: translate(0, -70%) scale(1.12); }
+  30% { transform: translate(0, -75%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(0, -190%) scale(1); }
+}
+/* Your turn: a soft glow in the game's color rises from your side of the table. */
+.game-scene.fx-turn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--hi) 26%, transparent), transparent);
+  animation: fx-turn .8s ease-out forwards;
+}
+@keyframes fx-turn { 0% { opacity: 0; transform: translateY(40%); } 30% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+/* Whoever's turn it becomes: their name pops. */
+.rm-label.active .rm-name { display: inline-block; animation: fx-up .45s var(--spring); }
+/* A hand's result in Blackjack. */
+.bj-hand-label.r-win, .bj-hand-label.r-blackjack { animation: fx-up .55s var(--spring); }
+.bj-hand-label.r-bust, .bj-hand-label.r-lose { animation: fx-no .34s ease-out; }
+@keyframes fx-no { 20% { translate: -5px 0; } 45% { translate: 4px 0; } 70% { translate: -2px 0; } }
+/* Winning cards hop; a meld that forms flashes once. */
+.sj-jack .front { animation: fx-hop .6s var(--spring); }
+@keyframes fx-hop { 35% { translate: 0 calc(var(--cw) * -.14); } }
+.gn-meld .front { animation: fx-flash .5s ease-out; }
+@keyframes fx-flash { 25% { filter: brightness(1.12) saturate(1.2); } }
 
 /* -------------------------------------------------- real phone: fullscreen */
 

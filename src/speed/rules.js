@@ -1,4 +1,4 @@
-// Speed (also called Stress), two players in real time. Pure state, no DOM,
+// Speed, two players in real time. Pure state, no DOM,
 // so it can be tested in Node. Seats: 0 = you, 1 = CPU.
 //
 // Each player gets a 15-card draw pile and a 5-card hand. Two side piles of 5
@@ -15,6 +15,7 @@ export const HAND = 5;
 
 /** One rank up or down, ace to king wrapping. */
 export const fits = (card, top) => {
+  if (!top) return false;
   const d = Math.abs(card.value - top.value);
   return d === 1 || d === 12;
 };

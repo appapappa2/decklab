@@ -2,13 +2,13 @@
 //   0–1.2 s     the game cards are laid out in a tilted grid, repeated, popping
 //               in one after another in a diagonal sweep
 //   1.1–4.8 s   the columns scroll vertically, neighbors in opposite
-//               directions, speeding up; the logo pops in
+//               directions, speeding up
 //   3.8–4.8 s   handoff: every card flies out from the center of the screen
 //               (as if the camera pushes through the grid) while the lobby
 //               zooms in from the center underneath them
 // A tap, click or key press skips it.
-import { GAMES } from './games.js?v=slapjack';
-import { coverHTML } from './covers.js?v=slapjack';
+import { GAMES } from './games.js?v=fourcolor';
+import { coverHTML } from './covers.js?v=fourcolor';
 
 const POP_SWEEP_MS = 1250; // last card has popped in by now
 const SCROLL_AT = 1100;
@@ -81,10 +81,6 @@ export function playIntro(screen, { lobby, onDone } = {}) {
     columns.push({ el: col, dir, cards });
   }
 
-  const logo = document.createElement('div');
-  logo.className = 'in-logo';
-  logo.innerHTML = '<span>the</span><span>deck</span>';
-  root.append(logo);
   screen.append(backdrop, root);
   if (lobby) {
     lobby.style.opacity = '0';
@@ -139,7 +135,6 @@ export function playIntro(screen, { lobby, onDone } = {}) {
       if (!flying) {
         flying = true;
         for (const { cards } of columns) for (const { el } of cards) el.style.animation = 'none';
-        logo.style.animation = 'none';
       }
       const k = ease(o);
       for (const { dir, cards } of columns) {
@@ -153,9 +148,6 @@ export function playIntro(screen, { lobby, onDone } = {}) {
           card.el.style.transform = `translate3d(${((vx / len) * push).toFixed(1)}px, ${((vy / len) * push).toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
         }
       }
-      // The logo zooms toward the camera and fades.
-      logo.style.transform = `translate(-50%, -50%) rotate(-6deg) scale(${(1 + 2.5 * k).toFixed(3)})`;
-      logo.style.opacity = String(1 - clamp01(o * 1.8));
       if (lobby) {
         lobby.style.opacity = String(clamp01(o * 3));
         lobby.style.transform = `scale(${(LOBBY_FROM + (1 - LOBBY_FROM) * k).toFixed(4)})`;
