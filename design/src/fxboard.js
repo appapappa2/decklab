@@ -1,4 +1,4 @@
-// The effects board: a small panel to the right of the phone with a button for
+// The effects board: a small panel next to the devboard's Animations phone, with a button for
 // every effect, so each one can be looked at on its own. The first group is
 // what the games already trigger by themselves; the second is the bigger
 // moments that nothing triggers yet (fx.js has both).
@@ -11,7 +11,9 @@ const h = (tag, cls, text) => {
   return el;
 };
 
-export function initFxBoard(stage, screen, fx) {
+// `transition` is the curtain to play: pass the one from the page that owns
+// `screen` when that is another document (the devboard's embedded table).
+export function initFxBoard(stage, screen, fx, { transition = playTransition } = {}) {
   const mid = () => {
     const { W, H } = fx.size();
     return { x: W / 2, y: H * 0.44 };
@@ -20,7 +22,7 @@ export function initFxBoard(stage, screen, fx) {
   const scoreEl = () =>
     [...screen.querySelectorAll('.game-scene.active .hud-mine, .game-scene.active .hud-you, .gs-you')].find((el) => el.getClientRects().length && (el.textContent || el.dataset.av));
   // The card curtain normally swaps the lobby and a table underneath it; here it just passes over.
-  const curtain = () => playTransition({ screen, lobbyEl: document.createElement('div'), sceneEl: document.createElement('div'), dir: 'in' });
+  const curtain = () => transition({ screen, lobbyEl: document.createElement('div'), sceneEl: document.createElement('div'), dir: 'in' });
   let streak = 1;
   let streakTimer = 0;
 
