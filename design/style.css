@@ -278,6 +278,45 @@ body.booting *, body.booting *::before, body.booting *::after { transition: none
 .statusbar .battery::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: color-mix(in srgb, currentColor 55%, transparent); }
 #device.landscape .statusbar { display: none; }
 
+/* The effects board: a column of buttons to the right of the phone. */
+#stage { position: relative; }
+#fx-board {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 128px;
+  max-height: calc(100% - 24px);
+  padding: 12px 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border: 1px solid #2c323b;
+  border-radius: 16px;
+  background: #12161b;
+  color: #e7eaee;
+  font: 500 12px/1.2 system-ui, sans-serif;
+}
+.fxb-title { margin: 0 2px 2px; font-size: 13px; font-weight: 700; }
+.fxb-group { margin: 8px 2px 2px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.fxb-btn {
+  padding: 7px 9px;
+  border: 1px solid #2c323b;
+  border-radius: 9px;
+  background: #171b21;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .12s, transform .12s;
+}
+.fxb-btn:hover { background: #1f242c; }
+.fxb-btn:active { transform: scale(.96); background: #262c35; }
+/* It needs room beside the phone, and it has no place on a real phone or next to the lab's own panel. */
+body.mode-phone #fx-board, body.route-lab #fx-board { display: none; }
+@media (max-width: 640px) { #fx-board { display: none; } }
 #device-bar { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; }
 #device-bar button {
   border: 1px solid #2c323b;
@@ -2168,6 +2207,7 @@ body.route-game .game-scene.active { display: block; }
   100% { opacity: 0; transform: translate(0, -190%) scale(1); }
 }
 /* Your turn: a soft glow in the game's color rises from your side of the table. */
+.fx-glow,
 .game-scene.fx-turn::after {
   content: '';
   position: absolute;
@@ -2181,6 +2221,27 @@ body.route-game .game-scene.active { display: block; }
   animation: fx-turn .8s ease-out forwards;
 }
 @keyframes fx-turn { 0% { opacity: 0; transform: translateY(40%); } 30% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+/* The same glow as a layer of its own, for anywhere. */
+.fx-glow { z-index: 2636; }
+/* A sheet of color over everything, for flashes and for dimming. */
+.fx-veil { position: absolute; inset: 0; z-index: 2638; pointer-events: none; opacity: 0; }
+/* A sticker slammed onto the middle of the screen: "You win!", a combo, a rank. */
+.fx-stamp {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  translate: -50% -50%;
+  z-index: 2650;
+  padding: 16px 30px 18px;
+  border-radius: 999px;
+  font: 700 38px/1 var(--font);
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 0 4px var(--card), 0 7px 0 4px rgba(23, 20, 15, .18);
+}
+.fx-stamp.round { display: grid; place-items: center; width: 136px; height: 136px; box-sizing: border-box; padding: 0; border-radius: 50%; font-size: 84px; letter-spacing: 0; }
+.fx-stamp.round.word { font-size: 40px; }
 /* Whoever's turn it becomes: their name pops. */
 .rm-label.active .rm-name { display: inline-block; animation: fx-up .45s var(--spring); }
 /* A hand's result in Blackjack. */
