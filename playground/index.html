@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deck Lab · 3D Playground</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="playground.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main id="view"></main>
+
+  <aside id="panel" aria-label="Playground controls">
+    <header>
+      <div class="title">Card Playground</div>
+      <div class="sub">Three.js · foil lab</div>
+    </header>
+
+    <section>
+      <h2>Scene</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" data-scene="cards" class="on">Cards</button>
+        <button type="button" data-scene="lobby">Lobby</button>
+      </div>
+    </section>
+
+    <section data-for="cards">
+      <h2>Card</h2>
+      <label>Game card <select id="card-pick"></select></label>
+      <label><input type="checkbox" id="card-back"> Show back</label>
+      <label>Tilt sensitivity <input type="range" id="tilt" min="0" max="1" step="0.01" value="0.6"></label>
+    </section>
+
+    <section data-for="cards">
+      <h2>Foil</h2>
+      <label><input type="checkbox" id="foil-on" checked> Foil overlay</label>
+      <label>Iridescence <input type="range" id="irid" min="0" max="1" step="0.01" value="1"></label>
+      <label>Iridescence thickness <input type="range" id="irid-th" min="100" max="800" step="10" value="380"></label>
+      <label>Sheen strength <input type="range" id="sheen" min="0" max="1" step="0.01" value="0.6"></label>
+      <label>Roughness <input type="range" id="rough" min="0" max="1" step="0.01" value="0.25"></label>
+      <label>Clearcoat <input type="range" id="clear" min="0" max="1" step="0.01" value="0.8"></label>
+    </section>
+
+    <section data-for="lobby">
+      <h2>Lobby</h2>
+      <label>Hand size <input type="range" id="hand-n" min="3" max="13" step="1" value="7"></label>
+      <label>Fan spread (deg) <input type="range" id="fan" min="0" max="60" step="1" value="26"></label>
+      <label><input type="checkbox" id="spin" checked> Idle sway</label>
+    </section>
+
+    <section>
+      <h2>Camera</h2>
+      <button type="button" id="reset-cam">Reset camera</button>
+      <p class="hint">Drag to orbit · scroll to zoom · hover a card to tilt it under light</p>
+    </section>
+  </aside>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
