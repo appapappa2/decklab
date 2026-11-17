@@ -16,7 +16,9 @@ Use `serve.py` rather than `python3 -m http.server`. The stock server only queue
 - **Desktop:** open <http://localhost:8000>. You get the **devboard**: a bar of tabs on top, with the page under it.
   - **Game:** an emulated iPhone 15 frame (393×852) running the app, with the lab panel on the right in the hand feel prototype.
   - **Animations:** a second phone showing a Stress table that deals and then holds still (not playable), with the **effects board** beside it.
-  - **Sounds:** an empty space for sound tests.
+  - **Sounds:** the **DL-1**, a monophonic synth in the spirit of the early-80s one-oscillator monosynths, built on Web Audio (`src/sounds/synth.js`): a VCO with saw, pulse with PWM (manual, LFO or envelope), a sub oscillator and noise; a source mixer; a 24 dB resonant low-pass VCF with envelope, LFO and keyboard follow; a VCA on the envelope or the gate; ADSR; an LFO (triangle, square, sample & hold, noise); glide; and a pitch bend sweep for sound effects. Play it with the mouse or the computer keyboard (A W S E D F T G Y H U J K O L P ;, Z / X for the octave). Double-click a slider to reset it.
+
+    Under it is the **sound bank** (`src/sounds/library.js`), every sound made on that synth: one for each effect on the Animations tab, the cards (deal, flip, pick up, play, peek, shuffle, collect, can't play) and the UI (tap, button, Play!, toggles, swipe, carousel land, sheets, back, toast, error, select). Click a sound to play it. **Edit** loads its patch onto the synth (click again for its next layer), and **Copy patch** copies the panel as JSON, only what differs from the default, ready to paste into the library.
 
   **Full motion**, at the right of the bar, plays every animation even when *Reduce motion* is on in the system settings (`src/motion.js`; every reduced-motion check in the app goes through it). It is on by default on desktop; a real phone follows the system. The embedded Stress table follows the switch too.
 
@@ -78,6 +80,7 @@ Everything works with a mouse (Pointer Events), plus some mouse-specific behavio
 ```
 index.html      markup: device frame, screen, table, panel
 style.css       frame, felt, cards (DOM/CSS only), panel, phone fullscreen
+src/sounds/     the Sounds tab: synth.js (engine), library.js (the sound bank), panel.js (UI), sounds.css
 src/motion.js   reduced motion: the system setting, unless the devboard's Full motion is on
 src/devboard.js desktop shell: Game / Animations / Sounds tabs; the Animations phone and its effects board
 src/main.js     wiring, rAF loop, panel actions, shortcuts, route switching
