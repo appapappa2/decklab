@@ -1,5 +1,6 @@
 import { Spring } from './spring.js';
 import { reducedMotion } from './motion.js';
+import { sfx } from './sfx.js';
 
 export const SUITS = [
   { id: 'S', name: 'spades', red: false, order: 0 },
@@ -129,6 +130,7 @@ export class CardSprite {
   }
 
   target(x, y, rot, scale, flip, lift) {
+    if (flip < 0.5 && this.flip.t >= 0.5) sfx('flip'); // turned face up
     this.x.t = x;
     this.y.t = y;
     this.rot.t = rot;

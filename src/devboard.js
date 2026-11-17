@@ -9,6 +9,7 @@
 import { detectMode } from './device.js';
 import { initFxBoard } from './fxboard.js?v=fourcolor';
 import { fullMotion, setFullMotion } from './motion.js';
+import { soundOn, setSoundOn } from './sfx.js';
 
 const TABS = ['game', 'animations', 'sounds'];
 const KEY = 'thedeck.devboard.tab';
@@ -92,6 +93,13 @@ motionBtn?.addEventListener('click', () => {
   showMotion();
 });
 showMotion();
+
+// Sound effects on or off (sfx.js); Settings in the lobby has the same switch.
+const soundBtn = document.getElementById('db-sound');
+const showSound = () => soundBtn?.setAttribute('aria-checked', String(soundOn()));
+soundBtn?.addEventListener('click', () => setSoundOn(!soundOn()));
+window.addEventListener('soundchange', showSound);
+showSound();
 
 // Keys belong to the game only while its tab is showing (the lobby, the lab
 // and the scenes all listen on window/document). On the Sounds tab they play the synth.

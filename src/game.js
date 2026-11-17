@@ -2,6 +2,7 @@ import { CardSprite, createDeck, shuffle } from './cards.js?v=fourcolor';
 import { clamp, computeMetrics, handSlots, nearestSlot } from './layout.js';
 import { Spring } from './spring.js';
 import { VelocityTracker } from './velocity.js';
+import { sfx } from './sfx.js';
 
 const SCROLL_K = 600; // stiffness of the hand-scroll spring
 const SCROLL_ZETA = 1;
@@ -185,6 +186,7 @@ export class Game {
     const on = !sp.selected;
     if (on && !this.s.multiSelect) this.deselectAll();
     sp.setSelected(on);
+    if (on) sfx('select');
     this.haptic(on ? 8 : 4);
   }
 
@@ -213,6 +215,7 @@ export class Game {
           Math.abs(sp.scale.v - sp.scale.t) <= .025 &&
           Math.abs(sp.flip.v) <= .03) {
         this.landingEvents.push(sp);
+        sfx('play'); // every card that lands on the table, whoever played it
         this.pendingLandings.delete(sp);
       }
     }
@@ -263,7 +266,9 @@ export class Game {
   }
 
   setPeek(i) {
-    this.peek = i >= 0 && i < this.hand.length ? i : -1;
+    const peek = i >= 0 && i < this.hand.length ? i : -1;
+    if (peek >= 0 && peek !== this.peek) sfx('peek');
+    this.peek = peek;
   }
 
   setActive(on) {
@@ -337,6 +342,7 @@ export class Game {
   pickUp(index, fx, fy, now, pointerType = 'touch') {
     const sp = this.hand[index];
     if (!sp) return false;
+    sfx('pickup');
     const m = this.m;
     const s = this.s;
     this.endScrollDrag(0);
@@ -499,6 +505,11 @@ export class Game {
       if (sp.waitUntil > now) {
         sp.z = 90 - i; // waiting on the deck/pile: first to leave is on top
         continue;
+      }
+      // A card that was waiting on the deck leaves for the hand now: dealt.
+      if (sp.waitUntil && sp.dealtAt !== sp.waitUntil) {
+        sp.dealtAt = sp.waitUntil;
+        sfx('deal');
       }
       sp.z = i === peek ? 400 : 100 + si;
       const slot = slots[si];

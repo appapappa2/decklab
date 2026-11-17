@@ -26,6 +26,7 @@ import { SpeedScene } from './speed/scene.js?v=fourcolor';
 import { CasinoScene } from './casino/scene.js?v=fourcolor';
 import { GinScene } from './gin/scene.js?v=fourcolor';
 import { SlapjackScene } from './slapjack/scene.js?v=fourcolor';
+import { sfx, installUiSounds } from './sfx.js';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -178,6 +179,10 @@ loadPresets().then(({ presets }) => window.lab.fx.setPresets(presets));
 // The devboard's VFX/Animations tab lists them (fxboard.js, set up by devboard.js)
 // and plays them in a frozen copy of a table: this page, embedded.
 window.lab.playTransition = playTransition;
+// Sound: taps and buttons on the screen; the rest is played where it happens (sfx.js).
+// window.lab.sfx is how the devboard's embedded table plays through this page.
+installUiSounds(screenEl);
+window.lab.sfx = sfx;
 // Avatars, the opponents' corner and the pills by your hand (hud.js).
 initHud(screenEl);
 
@@ -273,7 +278,10 @@ if (EMBED && lobbyNav.route.view === 'game' && lobbyNav.route.id === EMBED) {
       if (sc.rules.centers.every((c) => c.length)) {
         sc.stuckAt = Infinity;
         holdAt ||= now + 900;
-        if (now > holdAt) return;
+        if (now > holdAt) {
+          window.lab.sfxLive = true; // from here on, effects on this table are heard (sfx.js)
+          return;
+        }
       }
     }
     update(now, dt);

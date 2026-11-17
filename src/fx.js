@@ -25,6 +25,7 @@ import { SUIT_ART } from './cards.js?v=fourcolor';
 import { reducedMotion } from './motion.js';
 import { playTransition } from './transition.js?v=fourcolor';
 import { DEFAULTS } from './fx-presets.js?v=fourcolor';
+import { sfx } from './sfx.js';
 
 const COLORS = ['#F0442E', '#FFC42E', '#149A6A', '#2B62F0'];
 const SCORES = '.war-count, .rm-sub, .bj-bank, .cs-score, .gn-score';
@@ -231,6 +232,7 @@ export function initFx(screen) {
     const down = b.some((n, i) => n < a[i]);
     if (!up && !down) return;
     pop(el, up ? 'fx-up' : 'fx-down');
+    if (up) sfx('score');
     if (up && b.length === 1 && b[0] - a[0] > 0) floater(el, `+${(b[0] - a[0]).toLocaleString('en-US')}`);
   }
 
@@ -407,18 +409,22 @@ export function initFx(screen) {
     }
   }
 
-  /** Plays a list of layers, each after its own delay. */
-  function run(layers, at) {
+  /** Plays a list of layers, each after its own delay; `sound` (an id in sounds/library.js) plays with it. */
+  function run(layers, at, sound) {
+    if (sound) sfx(sound);
     for (const l of layers) {
       if (l.delay > 0) later(l.delay, () => layer(l, at));
       else layer(l, at);
     }
   }
 
-  /** Plays an effect by name. */
-  function play(id, at) {
+  /**
+   * Plays an effect by name, with the sound of the same name (sfx.js; effects
+   * without one are silent). `sound` picks another one, when the moment calls for it.
+   */
+  function play(id, at, sound = id) {
     const p = presets.get(id);
-    if (p) run(p.layers, at);
+    if (p) run(p.layers, at, sound);
   }
 
   /** Swaps in an edited set of effects (from the board, or the saved file). */
@@ -439,7 +445,8 @@ export function initFx(screen) {
         if (el.matches(BANNERS) && el.classList.contains('show') && (gained(m, 'show') || el.className !== m.oldValue)) {
           const c = center(el);
           const k = el.classList;
-          if (k.contains('war') || k.contains('go')) play('big-burst', c);
+          if (k.contains('count')) sfx('count'); // 3, 2, 1: a beep, no effect
+          else if (k.contains('war') || k.contains('go')) play('big-burst', c, k.contains('go') ? 'go' : 'big-burst');
           else if (k.contains('you') || k.contains('win')) play('sparks', c);
           else if (k.contains('cpu') || k.contains('lose') || k.contains('bad')) play('shake');
         } else if (el.matches('.sj-slap') && gained(m, 'show')) {
@@ -457,7 +464,8 @@ export function initFx(screen) {
         } else if (el.matches('.game-win') && gained(m, 'show')) {
           // The result card. Only a win gets the full treatment; setup cards get nothing.
           const title = el.querySelector('.game-win-title')?.textContent ?? '';
-          if (/^you (won|tied)/i.test(title)) play('confetti');
+          if (/^you (won|tied)/i.test(title)) play('confetti', undefined, 'win'); // confetti to see, the fanfare to hear
+          else if (/^you lost|wins/i.test(title)) sfx('lose');
         }
       } else {
         // Text changed somewhere: was it a score?
