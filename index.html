@@ -11,8 +11,8 @@
   <link rel="icon" href="data:,">
   <title>The Deck Lab</title>
   <script>
-    // Backdrop (paper / color / ink) before first paint; src/theme.js owns it after that.
-    try { document.documentElement.dataset.theme = localStorage.getItem('thedeck.theme') || 'paper'; } catch { document.documentElement.dataset.theme = 'paper'; }
+    // Backdrop (paper / ink) before first paint; src/theme.js owns it after that.
+    try { document.documentElement.dataset.theme = localStorage.getItem('thedeck.theme') === 'ink' ? 'ink' : 'paper'; } catch { document.documentElement.dataset.theme = 'paper'; }
   </script>
   <link rel="stylesheet" href="style.css?v=fourcolor">
   <link rel="stylesheet" href="src/sounds/sounds.css">

@@ -2,8 +2,8 @@
 // VFX/Animations tab. That phone is this page embedded (devboard.js), so the
 // board drives the embedded page's effects and, on Save, the real game's too.
 //
-// Overview: every effect, in three groups (what the games trigger themselves,
-// bigger moments nothing triggers yet, and your own). The play button runs
+// Overview: every effect, in four groups (what the games trigger themselves,
+// bigger moments nothing triggers yet, per-game reactions, and your own). The play button runs
 // one; its name opens it in the editor.
 //
 // Editor: an effect is a stack of layers (fx-presets.js), so here you rename
@@ -18,6 +18,7 @@ import { DEFAULTS, MODULES, makeLayer, mergePresets, loadPresets, PRESETS_FILE a
 const GROUPS = [
   ['game', 'In the games now'],
   ['moment', 'Moments'],
+  ['reaction', 'Game reactions'],
   ['custom', 'Yours'],
 ];
 
@@ -116,7 +117,7 @@ export function initFxBoard(stage, fx, { also = [] } = {}) {
   /** Replays the draft, shortly after the last change. */
   function preview(wait = 300) {
     clearTimeout(replay);
-    replay = setTimeout(() => draft && fx.run(draft.layers, undefined, draft.id), wait); // with its sound, if it has one
+    replay = setTimeout(() => draft && fx.run(draft.layers, undefined, draft.sound ?? draft.id), wait); // with its sound, if it has one
   }
 
   function control(layer, p) {

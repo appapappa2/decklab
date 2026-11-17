@@ -420,11 +420,12 @@ export function initFx(screen) {
 
   /**
    * Plays an effect by name, with the sound of the same name (sfx.js; effects
-   * without one are silent). `sound` picks another one, when the moment calls for it.
+   * without one are silent). An effect can name another sound (`sound` in
+   * fx-presets.js), and `sound` here overrides both when the moment calls for it.
    */
-  function play(id, at, sound = id) {
+  function play(id, at, sound) {
     const p = presets.get(id);
-    if (p) run(p.layers, at, sound);
+    if (p) run(p.layers, at, sound ?? p.sound ?? id);
   }
 
   /** Swaps in an edited set of effects (from the board, or the saved file). */

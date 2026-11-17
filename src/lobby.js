@@ -78,7 +78,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
   };
 
-  // Backdrop switch (paper / color / ink). It sits in the bar under the device
+  // Backdrop switch (paper / ink). It sits in the bar under the device
   // frame, next to Rotate, so the phone screen itself stays clean.
   const bar = document.getElementById('device-bar');
   if (bar && !bar.querySelector('.theme-switch')) {

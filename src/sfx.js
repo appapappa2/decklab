@@ -16,7 +16,7 @@ import { playSound } from './sounds/synth.js';
 const KEY = 'thedeck.sound';
 const BY_ID = new Map(SOUNDS.map((s) => [s.id, s]));
 // Minimum ms between two plays of the same sound.
-const GAP = { peek: 45, deal: 45, play: 60, flip: 50, land: 70, select: 60, tap: 40, score: 90 };
+const GAP = { peek: 45, deal: 45, play: 60, flip: 50, land: 70, select: 60, tap: 40, score: 90, tick: 35, foundation: 40, 'play-them': 60 };
 const last = new Map();
 const embedded = window.parent !== window && new URLSearchParams(location.search).has('embed');
 
@@ -40,11 +40,12 @@ window.addEventListener('storage', (e) => {
   if (e.key === KEY) on = e.newValue !== 'off';
 });
 
-export function sfx(id) {
+/** `arg` goes to the sound's make(): the step for 'tick' and 'foundation'. */
+export function sfx(id, arg) {
   if (embedded) {
     if (!window.lab?.sfxLive) return; // quiet while the table deals and settles (main.js)
     try {
-      window.parent.lab?.sfx?.(id);
+      window.parent.lab?.sfx?.(id, arg);
     } catch {}
     return;
   }
@@ -56,7 +57,7 @@ export function sfx(id) {
   if (now - (last.get(id) ?? -1e9) < (GAP[id] ?? 30)) return;
   last.set(id, now);
   try {
-    playSound(sound);
+    playSound(arg === undefined ? sound : { ...sound, make: () => sound.make(arg) });
   } catch (err) {
     console.warn('sfx', id, err);
   }

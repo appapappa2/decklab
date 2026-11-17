@@ -262,21 +262,6 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
   --shade-lift: color-mix(in srgb, var(--ink-c) 20%, var(--paper));
 }
 :root[data-theme="paper"] #screen[data-c="yellow"] { --mark: var(--ink-c); }
-:root[data-theme="color"] #screen {
-  --base: var(--c);
-  --fg: var(--on-c);
-  --hi: var(--p);
-  --hi-fg: var(--on-p);
-  --mark: var(--on-c);
-  --back: var(--ink-c);
-  --back-fg: var(--paper);
-  --you: var(--on-c);
-  --them: var(--on-c);
-  --dim: var(--card);
-  --dim-by: .62;
-  --shade: color-mix(in srgb, var(--ink-c) 22%, var(--c));
-  --shade-lift: color-mix(in srgb, var(--ink-c) 26%, var(--c));
-}
 /* The hand feel lab keeps its dark table whatever the backdrop is. */
 :root[data-theme="ink"] #screen,
 :root body.route-lab #screen {
@@ -470,13 +455,12 @@ body.mode-phone #fx-board { display: none; }
   color: var(--text);
 }
 #device-bar button:hover { background: #1f242c; }
-/* Backdrop switch (paper / color / ink), next to Rotate under the frame. */
+/* Backdrop switch (paper / ink), next to Rotate under the frame. */
 .theme-switch { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border: 1px solid #2c323b; border-radius: 999px; background: #171b21; }
 body.route-lab .theme-switch { display: none; } /* the lab keeps its own dark table */
 #device-bar .theme-swatch { position: relative; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22); transition: transform .35s cubic-bezier(.3, 1.5, .5, 1), box-shadow .2s; }
 #device-bar .theme-swatch::before { content: ''; position: absolute; inset: -8px -5px; }
 #device-bar .theme-swatch-paper { background: #F5EFE3; }
-#device-bar .theme-swatch-color { background: conic-gradient(#F0442E 0 25%, #FFC42E 0 50%, #149A6A 0 75%, #2B62F0 0); box-shadow: none; }
 #device-bar .theme-swatch-ink { background: #17140F; }
 #device-bar .theme-swatch[aria-checked="true"] { transform: scale(1.15); box-shadow: 0 0 0 2px #171b21, 0 0 0 3.5px #e7eaee; }
 #device-bar .theme-swatch:active { transform: scale(.82); }
@@ -1002,9 +986,6 @@ body.panel-overlay #lab-back { right: calc(var(--safe-right) + 56px); }
 @keyframes gs-wheel { to { transform: rotate(360deg); } }
 /* Every suit takes the active game's color, and changes with it. */
 .gs-wheel path { fill: var(--c); transition: fill .45s var(--ease); }
-/* On the color backdrop the screen already is that color, so the suits take the text color there. */
-:root[data-theme="color"] .gs-wheel path { fill: var(--fg); }
-:root[data-theme="color"] .gs-wheel svg { opacity: .08; }
 /* On ink the game color sinks into the dark, so the wheel gets more of it. */
 :root[data-theme="ink"] .gs-wheel svg { opacity: .24; }
 .gs::before { content: ''; flex: 1 1 0; }
@@ -1368,14 +1349,6 @@ body:has(#intro) #lobby { will-change: transform, opacity; }
     0 0 0 1px rgba(23, 20, 15, .06),
     0 calc(var(--w) * .028) 0 rgba(23, 20, 15, .16),
     0 calc(var(--w) * .08) calc(var(--w) * .1) rgba(23, 20, 15, .14);
-}
-/* On the color backdrop the selected box has the table's own color, so a
-   deeper shadow does the job the paper border used to do. */
-:root[data-theme="color"] .gs-item .cv {
-  box-shadow:
-    0 0 0 1px rgba(23, 20, 15, .1),
-    0 calc(var(--w) * .028) 0 rgba(23, 20, 15, .24),
-    0 calc(var(--w) * .1) calc(var(--w) * .16) rgba(23, 20, 15, .3);
 }
 .cv-suit { position: absolute; left: 50%; top: 56%; width: 92%; transform: translate(-50%, -50%) rotate(-8deg); color: color-mix(in srgb, var(--c) 88%, var(--ink-c)); }
 .cv-suit .suit-mark { width: 100%; color: inherit; }
