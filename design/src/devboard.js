@@ -3,10 +3,11 @@
 //   Game        the phone running the app (lobby, games, hand feel lab)
 //   Animations  a second phone showing a frozen Stress table, with the effects
 //               board beside it; every effect plays on that table
-//   Sounds      an empty space for sound tests
+//   Sounds      the DL-1 synth and the sound bank (sounds/panel.js)
 // On a real phone (mode-phone) there is no shell: only the game shows.
 import { detectMode } from './device.js';
 import { initFxBoard } from './fxboard.js?v=fourcolor';
+import { fullMotion, setFullMotion } from './motion.js';
 
 const TABS = ['game', 'animations', 'sounds'];
 const KEY = 'thedeck.devboard.tab';
@@ -40,6 +41,21 @@ function select(next) {
   window.dispatchEvent(new Event('resize'));
   fitAnimationPhone();
   if (tab === 'animations') loadAnimationTable();
+  if (tab === 'sounds') loadSounds();
+  else sounds?.hide();
+}
+
+/** The Sounds tab is built the first time it opens. */
+let sounds = null;
+let soundsLoading = false;
+function loadSounds() {
+  if (sounds) return sounds.show();
+  if (soundsLoading) return;
+  soundsLoading = true;
+  import('./sounds/panel.js').then(({ initSounds }) => {
+    sounds = initSounds(document.getElementById('pane-sounds'));
+    if (tab === 'sounds') sounds.show();
+  });
 }
 
 /**
@@ -65,15 +81,35 @@ function loadAnimationTable() {
 
 for (const b of buttons) b.addEventListener('click', () => select(b.dataset.tab));
 
+// Full motion: play every animation even when the system asks for reduced
+// motion (motion.js). The embedded table follows through localStorage.
+const motionBtn = document.getElementById('db-motion');
+const showMotion = () => motionBtn?.setAttribute('aria-checked', String(fullMotion()));
+motionBtn?.addEventListener('click', () => {
+  setFullMotion(!fullMotion());
+  showMotion();
+});
+showMotion();
+
 // Keys belong to the game only while its tab is showing (the lobby, the lab
-// and the scenes all listen on window/document).
+// and the scenes all listen on window/document). On the Sounds tab they play the synth.
 window.addEventListener(
   'keydown',
   (e) => {
-    if (tab !== 'game') e.stopImmediatePropagation();
+    if (tab === 'game') return;
+    e.stopImmediatePropagation();
+    if (tab === 'sounds') sounds?.keydown(e);
   },
   true,
 );
+window.addEventListener('keyup', (e) => {
+  if (tab === 'sounds') sounds?.keyup(e);
+});
+// A key held while the window loses focus would never get its keyup.
+window.addEventListener('blur', () => {
+  sounds?.hide();
+  if (tab === 'sounds') sounds?.show();
+});
 
 /** Scale the Animations tab's phone frame to fit its pane, like the game's. */
 const animStage = document.querySelector('#pane-animations .db-stage');

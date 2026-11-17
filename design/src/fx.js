@@ -19,11 +19,12 @@
 // up, a countdown). They are all returned by initFx, and the effects board next
 // to the phone (fxboard.js) has a button for each.
 import { SUIT_ART } from './cards.js?v=fourcolor';
+import { reducedMotion } from './motion.js';
 
 const COLORS = ['#F0442E', '#FFC42E', '#149A6A', '#2B62F0'];
 const SCORES = '.war-count, .rm-sub, .bj-bank, .cs-score, .gn-score';
 const BANNERS = '.war-banner, .bj-banner, .sd-banner';
-const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+const reduced = reducedMotion; // the system setting, unless the devboard overrides it
 const rand = (a, b) => a + Math.random() * (b - a);
 const INK = '#17140F';
 const SUIT_PATHS = typeof Path2D === 'undefined' ? [] : Object.values(SUIT_ART).map((a) => new Path2D(a.shape));

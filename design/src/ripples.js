@@ -1,3 +1,4 @@
+import { reducedMotion } from './motion.js';
 const MAX_RIPPLES = 8;
 const RIPPLE_LIFE = 0.76;
 const ECHO_DELAY = 0.11;
@@ -16,7 +17,7 @@ export class LandingRipples {
     this.height = 0;
     this.ripples = [];
     this.painted = false;
-    this.motionQuery = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.motionQuery = reducedMotion; // the system setting, unless the devboard overrides it
     this.reduced = this.motionQuery?.matches ?? false;
     this.onMotionChange = (event) => {
       this.reduced = event.matches;

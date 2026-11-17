@@ -15,6 +15,7 @@
     try { document.documentElement.dataset.theme = localStorage.getItem('thedeck.theme') || 'paper'; } catch { document.documentElement.dataset.theme = 'paper'; }
   </script>
   <link rel="stylesheet" href="style.css?v=fourcolor">
+  <link rel="stylesheet" href="src/sounds/sounds.css">
 </head>
 <body class="booting route-lobby">
   <div id="app">
@@ -25,6 +26,7 @@
         <button type="button" role="tab" data-tab="animations" aria-controls="pane-animations">Animations</button>
         <button type="button" role="tab" data-tab="sounds" aria-controls="pane-sounds">Sounds</button>
       </nav>
+      <button type="button" id="db-motion" role="switch" aria-checked="true" title="Play every animation, even with Reduce motion on in the system settings">Full motion</button>
     </header>
     <div id="devboard-body">
     <section id="pane-game" class="db-pane" role="tabpanel" data-tab="game">

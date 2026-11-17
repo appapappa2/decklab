@@ -7,6 +7,7 @@
 // the other way round when leaving). The cards are random faces from the deck,
 // so it is the same for every game and needs nothing from them.
 import { createDeck, faceHTML } from './cards.js?v=fourcolor';
+import { reducedMotion } from './motion.js';
 
 const UP_MS = 480; // ms from launch until the card has all but stopped at the top
 const HANG_MS = 150; // ms it floats there, barely moving
@@ -17,7 +18,7 @@ export const DEAL_AT = APEX_AT + HANG_MS / 2 + 150; // games start dealing as th
 
 const COUNT = 12; // 3 columns x 4 rows (4 x 3 in landscape)
 const DECK = createDeck();
-const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+const reduced = reducedMotion; // the system setting, unless the devboard overrides it
 
 /**
  * @param {{ screen: HTMLElement, lobbyEl: HTMLElement, sceneEl: HTMLElement, dir: 'in' | 'out' }} o
