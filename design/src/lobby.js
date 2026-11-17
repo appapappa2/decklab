@@ -1,14 +1,42 @@
 // Lobby UI and hash routing.
-//   #/              lobby (game carousel; per-game single/multi toggle)
+//   #/              lobby (game carousel; per-game single/multi toggle; backdrop switch)
 //   #/dev           dev menu
 //   #/dev/hand-feel hand feel prototype (the lab)
 //   #/play/<game>   a game from GAMES that's ready in some mode
-import { GAMES, DEV_ITEMS } from './games.js?v=slapjack';
-import { coverHTML } from './covers.js?v=slapjack';
+import { GAMES, DEV_ITEMS } from './games.js?v=fourcolor';
+import { coverHTML } from './covers.js?v=fourcolor';
+import { SUIT_ART } from './cards.js?v=fourcolor';
 import { Spring } from './spring.js';
+import { THEMES, getTheme, setTheme, cycleTheme, setScreenColor } from './theme.js';
+import { createProfile } from './profile.js?v=fourcolor';
 
 const INDEX_KEY = 'thedeck.lobby.game';
 const modeKey = (id) => `thedeck.lobby.mode.${id}`;
+
+/**
+ * The lobby backdrop: one big wheel of suits. Rings of spade, heart, club,
+ * diamond (in that order, over and over) around a common center, every suit
+ * standing on its ring like a seat on a Ferris wheel. CSS turns it slowly;
+ * the carousel nudges it a notch per game (layoutItems).
+ */
+const WHEEL = 1360; // px, wider than any phone's diagonal
+function wheelSVG() {
+  const order = ['S', 'H', 'C', 'D'];
+  const c = WHEEL / 2;
+  const size = 30;
+  let out = '';
+  for (let k = 0, r = 132; r < c - size; k++, r += 78) {
+    const n = Math.max(8, Math.round((2 * Math.PI * r) / 80 / 4) * 4); // a multiple of four, so the cycle closes
+    for (let i = 0; i < n; i++) {
+      const a = (360 * (i + (k % 2) / 2)) / n;
+      const id = order[(i + k) % 4];
+      out += `<path class="w-${id}" transform="rotate(${a.toFixed(2)} ${c} ${c}) translate(${c - size / 2} ${c - r - size / 2}) scale(${size / 100})" d="${SUIT_ART[id].shape}"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${WHEEL} ${WHEEL}" width="${WHEEL}" height="${WHEEL}" aria-hidden="true" focusable="false">${out}</svg>`;
+}
+// Eight teeth and a round hole, generated rather than traced, filled even-odd so the hole stays open.
+const GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" d="M10.02 4.87L10.49 1.91L13.51 1.91L13.98 4.87L15.64 5.56L18.07 3.80L20.20 5.93L18.44 8.36L19.13 10.02L22.09 10.49L22.09 13.51L19.13 13.98L18.44 15.64L20.20 18.07L18.07 20.20L15.64 18.44L13.98 19.13L13.51 22.09L10.49 22.09L10.02 19.13L8.36 18.44L5.93 20.20L3.80 18.07L5.56 15.64L4.87 13.98L1.91 13.51L1.91 10.49L4.87 10.02L5.56 8.36L3.80 5.93L5.93 3.80L8.36 5.56ZM12 8.6a3.4 3.4 0 1 0 0 6.8a3.4 3.4 0 1 0 0-6.8Z"/></svg>';
 const h = (tag, cls, text) => {
   const el = document.createElement(tag);
   if (cls) el.className = cls;
@@ -29,7 +57,7 @@ export function parseRoute(hash = location.hash) {
   return { view: 'lobby' };
 }
 
-export function initLobby(root, { onRoute }) {
+export function initLobby(root, { onRoute, haptic = () => {}, settings = null, saveSettings = () => {} }) {
   let pendingZoom = null; // screen rect of the cover a game was opened from
   let toastTimer = 0;
 
@@ -48,6 +76,28 @@ export function initLobby(root, { onRoute }) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
   };
+
+  // Backdrop switch (paper / color / ink). It sits in the bar under the device
+  // frame, next to Rotate, so the phone screen itself stays clean.
+  const bar = document.getElementById('device-bar');
+  if (bar && !bar.querySelector('.theme-switch')) {
+    const themes = h('div', 'theme-switch');
+    themes.setAttribute('role', 'radiogroup');
+    themes.setAttribute('aria-label', 'Backdrop');
+    for (const t of THEMES) {
+      const b = h('button', `theme-swatch theme-swatch-${t}`);
+      b.type = 'button';
+      b.dataset.theme = t;
+      b.title = `${t[0].toUpperCase()}${t.slice(1)} backdrop (T)`;
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-label', `${t[0].toUpperCase()}${t.slice(1)} backdrop`);
+      b.setAttribute('aria-checked', String(getTheme() === t));
+      b.addEventListener('click', () => setTheme(t));
+      themes.append(b);
+    }
+    bar.querySelector('#rotate')?.after(themes);
+    if (!themes.isConnected) bar.prepend(themes);
+  }
 
   const header = (title, sub, { back, dev } = {}) => {
     const el = h('header', 'lobby-header');
@@ -101,12 +151,15 @@ export function initLobby(root, { onRoute }) {
     const view = h('section', 'lobby-view gs');
     const c = carousel;
 
-    const head = h('header', 'gs-head');
-    const logo = h('div', 'gs-logo');
-    logo.innerHTML = '<span>the</span><span>deck</span>';
-    head.append(logo);
+    // The game's name, centered in the space above the card.
+    const top = h('div', 'gs-top');
+    const title = h('h1', 'gs-title');
+    top.append(title);
 
-    const discs = h('div', 'gs-discs');
+    const backdrop = h('div', 'gs-backdrop');
+    const wheel = h('div', 'gs-wheel');
+    wheel.innerHTML = wheelSVG();
+    backdrop.append(wheel);
     const stage = h('div', 'gs-stage');
     c.games = GAMES;
     c.items = c.games.map((g, i) => {
@@ -124,11 +177,12 @@ export function initLobby(root, { onRoute }) {
       return el;
     });
 
-    // Title, players and tagline under the card. Tapping the card plays it.
+    // Players and tagline under the card, then one big Play bar at the bottom
+    // with the Single / Multi switch built into it.
     const info = h('div', 'gs-info');
-    const title = h('div', 'gs-title');
     const sub = h('div', 'gs-sub');
     const meta = h('div', 'gs-meta');
+    const actions = h('div', 'gs-playbar');
     // Single / Multi, only for games that have both.
     const toggle = h('div', 'gs-toggle');
     toggle.setAttribute('role', 'radiogroup');
@@ -141,8 +195,14 @@ export function initLobby(root, { onRoute }) {
       b.addEventListener('click', () => setMode(key));
       toggle.append(b);
     }
-    info.append(title, sub, toggle, meta);
-    c.ui = { view, discs, stage, title, sub, meta, toggle };
+    const play = h('button', 'gs-play', 'Play');
+    play.type = 'button';
+    play.addEventListener('click', () => {
+      if (!c.drag?.moved) openGame();
+    });
+    actions.append(play, toggle);
+    info.append(sub, meta, actions);
+    c.ui = { view, top, info, wheel, stage, title, sub, meta, toggle, play, playbar: actions };
 
     const dots = h('div', 'gs-dots');
     c.games.forEach((_, i) => {
@@ -154,21 +214,96 @@ export function initLobby(root, { onRoute }) {
     });
     c.ui.dots = dots;
 
-    const dev = h('a', 'gs-dev', 'dev');
-    dev.href = '#/dev';
+    // Top left: your avatar with its rank badge; it opens your profile (profile.js).
+    // Top right: a round settings button, and the sheet it opens.
+    const profile = createProfile({ total: c.games.length, haptic });
+    c.ui.profile = profile;
+    const you = profile.button;
+    const gear = h('button', 'gs-gear');
+    gear.type = 'button';
+    gear.setAttribute('aria-label', 'Settings');
+    gear.innerHTML = GEAR;
+    gear.addEventListener('click', () => {
+      haptic(8);
+      toggleSettings(true);
+    });
+    const sheet = renderSettings();
+    c.ui.sheet = sheet;
 
-    stage.append(info);
-    view.append(discs, head, stage, dots, dev);
+    // Between the blocks sit flexible gaps (the dot strip is one of them), so
+    // the air above the name, around the card and under it stays in proportion.
+    view.append(backdrop, top, dots, stage, h('div', 'gs-gap'), info, you, gear, sheet, profile.sheet);
 
     // Start on the game picked last time.
     const savedId = localStorage.getItem(INDEX_KEY);
     const start = Math.max(0, c.games.findIndex((g) => g.id === savedId));
     c.pos.set(start);
     c.index = -1;
-    c.discReady = false;
-    bindStage(stage);
+    c.ready = false;
+    bindStage(view, stage);
     return view;
   }
+
+  /** The settings sheet: backdrop, haptics, and the way into the dev menu. */
+  function renderSettings() {
+    const wrap = h('div', 'gs-sheet-wrap');
+    const card = h('div', 'gs-sheet');
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-label', 'Settings');
+    card.append(h('div', 'gs-sheet-title', 'Settings'));
+    const row = (label, options, current, pick) => {
+      const r = h('div', 'gs-sheet-row');
+      const opts = h('div', 'gs-toggle gs-opts');
+      opts.style.setProperty('--n', String(options.length));
+      opts.setAttribute('role', 'radiogroup');
+      opts.setAttribute('aria-label', label);
+      for (const [value, text] of options) {
+        const b = h('button', 'gs-toggle-btn', text);
+        b.type = 'button';
+        b.dataset.value = value;
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(value === current()));
+        b.addEventListener('click', () => {
+          pick(value);
+          haptic(8);
+          for (const o of opts.children) o.setAttribute('aria-checked', String(o.dataset.value === current()));
+        });
+        opts.append(b);
+      }
+      r.append(h('div', 'gs-sheet-label', label), opts);
+      return r;
+    };
+    const themeRow = row('Backdrop', THEMES.map((t) => [t, `${t[0].toUpperCase()}${t.slice(1)}`]), getTheme, setTheme);
+    themeRow.classList.add('gs-theme-row');
+    card.append(themeRow);
+    if (settings) {
+      card.append(
+        row('Haptics', [['on', 'On'], ['off', 'Off']], () => (settings.haptics ? 'on' : 'off'), (v) => {
+          settings.haptics = v === 'on';
+          saveSettings();
+        }),
+      );
+    }
+    const actions = h('div', 'gs-sheet-actions');
+    const dev = h('a', 'game-btn', 'Dev menu');
+    dev.href = '#/dev';
+    const done = h('button', 'game-btn accent', 'Done');
+    done.type = 'button';
+    done.addEventListener('click', () => toggleSettings(false));
+    actions.append(dev, done);
+    card.append(actions);
+    wrap.append(card);
+    // A tap outside the card closes it.
+    wrap.addEventListener('click', (e) => {
+      if (e.target === wrap) toggleSettings(false);
+    });
+    return wrap;
+  }
+
+  function toggleSettings(open) {
+    carousel.ui?.sheet?.classList.toggle('show', open);
+  }
+  const settingsOpen = () => !!carousel.ui?.sheet?.classList.contains('show') || !!carousel.ui?.profile?.isOpen();
 
   function goTo(i) {
     const c = carousel;
@@ -187,11 +322,24 @@ export function initLobby(root, { onRoute }) {
     const g = carousel.games[carousel.index];
     if (!g) return;
     if (isReady(g)) {
+      haptic(12);
       // Tell the router where the cover is, so the game can zoom out of it.
       const cover = carousel.items[carousel.index]?.querySelector('.cv');
       pendingZoom = cover ? cover.getBoundingClientRect() : null;
       location.hash = modeOf(g) === 'multi' ? `${g.route}/multi` : g.route;
-    } else showToast(`${g.name} ${modeOf(g) === 'multi' ? 'multiplayer ' : ''}is coming soon`);
+    } else {
+      haptic([10, 40, 10]);
+      nudge(carousel.ui.playbar);
+      showToast(`${g.name} ${modeOf(g) === 'multi' ? 'multiplayer ' : ''}is coming soon`);
+    }
+  }
+
+  /** A short "no" shake. */
+  function nudge(el) {
+    if (!el) return;
+    el.classList.remove('nudge');
+    void el.offsetWidth;
+    el.classList.add('nudge');
   }
 
   function select(i) {
@@ -201,13 +349,12 @@ export function initLobby(root, { onRoute }) {
     const g = c.games[i];
     if (!g) return;
     localStorage.setItem(INDEX_KEY, g.id);
-    const { view, title, sub, meta, dots } = c.ui;
-    const [cover, bg, edge] = g.colors ?? ['#444', '#666', '#333'];
-    view.style.setProperty('--gs-cover', cover);
-    view.style.setProperty('--gs-edge', edge);
-    pushDisc(bg, edge, c.discReady);
-    c.discReady = true;
-    title.textContent = `${String(i + 1).padStart(2, '0')}.${g.name}`;
+    const { title, sub, meta, dots } = c.ui;
+    setScreenColor(g.color, g.pop);
+    if (c.ready) haptic(6); // a detent for every game that passes the middle
+    c.ready = true;
+    title.textContent = g.name;
+    title.style.setProperty('--len', String(Math.max(9, g.name.length)));
     meta.textContent = g.tag ?? g.blurb;
     updateMode(g);
     for (const el of [title, sub, meta]) {
@@ -216,7 +363,10 @@ export function initLobby(root, { onRoute }) {
       el.classList.add('swap');
     }
     [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
-    c.items.forEach((el, k) => el.setAttribute('aria-current', String(k === i)));
+    c.items.forEach((el, k) => {
+      el.setAttribute('aria-current', String(k === i));
+      el.classList.toggle('on', k === i); // the cover's cards hop when it lands in the middle
+    });
   }
 
   /** Switches the selected game between single and multiplayer. */
@@ -224,6 +374,7 @@ export function initLobby(root, { onRoute }) {
     const g = carousel.games[carousel.index];
     if (!g || !g.modes.includes(key) || modeOf(g) === key) return;
     localStorage.setItem(modeKey(g.id), key);
+    haptic(8);
     updateMode(g);
     const { sub } = carousel.ui;
     sub.classList.remove('swap');
@@ -234,63 +385,38 @@ export function initLobby(root, { onRoute }) {
   /** Text, toggle and SOON state for the selected game's current mode. */
   function updateMode(g) {
     const c = carousel;
-    const { sub, toggle } = c.ui;
+    const { sub, toggle, play, playbar } = c.ui;
     const ready = isReady(g);
     const mode = modeOf(g);
     const el = c.items[c.games.indexOf(g)];
     el?.classList.toggle('soon', !ready);
     el?.setAttribute('aria-label', ready ? `Play ${g.name}` : `${g.name}, coming soon`);
     sub.textContent = ready ? playersText(g) : `${playersText(g)} · coming soon`;
+    play.textContent = ready ? 'Play' : 'Soon';
+    playbar.classList.toggle('soon', !ready);
+    play.setAttribute('aria-label', ready ? `Play ${g.name}` : `${g.name}, coming soon`);
     const both = g.modes.length > 1;
     toggle.hidden = !both;
     toggle.dataset.mode = mode;
     for (const b of toggle.children) b.setAttribute('aria-checked', String(b.dataset.mode === mode));
   }
 
-  /**
-   * The background disc for the selected game grows from radius 0 while the
-   * previous one fades out.
-   */
-  function pushDisc(bg, edge, animate) {
-    const box = carousel.ui.discs;
-    const d = h('div', 'gs-disc');
-    d.style.setProperty('--gs-bg', bg);
-    d.style.setProperty('--gs-edge', edge);
-    const old = [...box.children];
-    box.append(d);
-    if (!animate) {
-      for (const o of old) o.remove();
-      return;
-    }
-    // The previous disc fades away while the new one grows from the center.
-    for (const o of old) {
-      if (o.dataset.leaving) continue;
-      o.dataset.leaving = '1';
-      o.animate([{ opacity: getComputedStyle(o).opacity }, { opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'forwards' })
-        .finished.then(() => o.remove(), () => o.remove());
-    }
-    d.animate(
-      [{ transform: 'translate(-50%, -50%) scale(0)' }, { transform: 'translate(-50%, -50%) scale(1)' }],
-      { duration: 750, easing: 'cubic-bezier(.22, .8, .25, 1)' },
-    );
-  }
-
-  function bindStage(stage) {
+  function bindStage(area, stage) {
     const c = carousel;
     const spacing = () => stage.clientWidth * 0.62;
-    stage.addEventListener('pointerdown', (e) => {
+    area.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (e.target instanceof Element && e.target.closest('.gs-toggle')) return;
+      if (e.target instanceof Element && e.target.closest('.gs-toggle, .gs-dots, .gs-gear, .gs-you, .gs-sheet-wrap')) return;
       c.drag = { id: e.pointerId, x: e.clientX, start: c.pos.v, moved: false, samples: [[performance.now(), e.clientX]] };
     });
-    stage.addEventListener('pointermove', (e) => {
+    area.addEventListener('pointermove', (e) => {
       const d = c.drag;
       if (!d || e.pointerId !== d.id) return;
       const dx = e.clientX - d.x;
       if (!d.moved && Math.abs(dx) > 6) {
         d.moved = true;
         try {
-          stage.setPointerCapture(e.pointerId);
+          area.setPointerCapture(e.pointerId);
         } catch {
           /* synthetic */
         }
@@ -318,9 +444,9 @@ export function initLobby(root, { onRoute }) {
         setTimeout(() => (c.drag = null), 0);
       } else c.drag = null;
     };
-    stage.addEventListener('pointerup', end);
-    stage.addEventListener('pointercancel', end);
-    stage.addEventListener(
+    area.addEventListener('pointerup', end);
+    area.addEventListener('pointercancel', end);
+    area.addEventListener(
       'wheel',
       (e) => {
         e.preventDefault();
@@ -348,10 +474,17 @@ export function initLobby(root, { onRoute }) {
     const stage = c.ui?.stage;
     if (!stage || !stage.isConnected) return;
     const W = stage.clientWidth;
-    const H = stage.clientHeight;
-    // Covers are playing-card shaped (5:7); `size` is the width.
-    const size = Math.min(W * 0.64, (H * (W > H ? 0.56 : 0.66)) / 1.4, 250);
+    // Covers are playing-card shaped (5:7); `size` is the width. The stage is
+    // exactly as tall as the card (1.4 covers), so the card is sized from what
+    // the name and the Play bar leave over, keeping at least 24px per gap.
+    const { view, top, info } = c.ui;
+    const cs = getComputedStyle(view);
+    const free = view.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - top.offsetHeight - info.offsetHeight - 84;
+    const size = Math.max(90, Math.min(W * 0.64, free / 1.4, 250));
     stage.style.setProperty('--cover', `${size}px`);
+    // The wheel is centered on the card and turns a notch for every game scrolled past.
+    c.ui.wheel.style.top = `${stage.offsetTop + (size * 1.4) / 2}px`;
+    c.ui.wheel.style.rotate = `${(-c.pos.v * 11.25).toFixed(2)}deg`;
     const p = c.pos.v;
     c.items.forEach((el, i) => {
       const d = i - p;
@@ -367,9 +500,10 @@ export function initLobby(root, { onRoute }) {
       el.style.transform = `translate(-50%, -50%) translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${(-a * 120).toFixed(0)}px) rotateY(${ry.toFixed(2)}deg) rotate(${rz.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
       el.style.zIndex = String(100 - Math.round(a * 10));
       el.style.opacity = String(Math.max(0, Math.min(1, 2.6 - a)));
-      el.style.filter = a > 0.5 ? `saturate(${(1 - Math.min(a - 0.5, 1) * 0.3).toFixed(2)})` : '';
       el.tabIndex = a < 0.5 ? 0 : -1;
     });
+    // The dot strip under the name is only there while the carousel is moving.
+    c.ui.view.classList.toggle('scrolling', !!c.drag?.moved || Math.abs(c.pos.t - p) > 0.04);
     select(Math.max(0, Math.min(c.games.length - 1, Math.round(p))));
   }
 
@@ -391,11 +525,24 @@ export function initLobby(root, { onRoute }) {
   // Arrow keys and Enter, while the carousel is showing.
   window.addEventListener('keydown', (e) => {
     if (route.view !== 'lobby' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (settingsOpen()) {
+      if (e.key === 'Escape') {
+        toggleSettings(false);
+        carousel.ui?.profile?.open(false);
+      }
+      return;
+    }
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
     else if (e.key === 'Enter' && !(e.target instanceof Element && e.target.closest('button, a'))) openGame();
+    else if (e.key.toLowerCase() === 't') cycleTheme();
     else return;
     e.preventDefault();
+  });
+  // The backdrop switch follows the theme, wherever it was changed from.
+  window.addEventListener('themechange', () => {
+    for (const b of document.querySelectorAll('.theme-swatch')) b.setAttribute('aria-checked', String(b.dataset.theme === getTheme()));
+    for (const b of root.querySelectorAll('.gs-theme-row .gs-toggle-btn')) b.setAttribute('aria-checked', String(b.dataset.value === getTheme()));
   });
   // The stage size depends on the screen; re-lay out when it changes.
   new ResizeObserver(() => {

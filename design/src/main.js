@@ -1,31 +1,30 @@
 import { initDevice } from './device.js';
 import { buildPanel, loadSettings, saveSettings } from './settings.js';
-import { Game } from './game.js?v=middle-only-landings';
+import { Game } from './game.js?v=fourcolor';
 import { Input } from './input.js';
 import { DebugOverlay } from './debug.js';
-import { cardBackHTML } from './cards.js?v=landing-burst';
-import { SparkleTrail } from './sparkles.js?v=landing-burst';
-import { LandingRipples } from './ripples.js?v=water-ripple';
-import { initLobby } from './lobby.js?v=slapjack';
-import { playIntro } from './intro.js?v=slapjack';
-import { SolitaireScene } from './solitaire/scene.js?v=gin';
-import { WarScene } from './war/scene.js?v=gin';
-import { EightsScene } from './eights/scene.js?v=gin';
-import { GoFishScene } from './gofish/scene.js?v=gin';
-import { HeartsScene } from './hearts/scene.js?v=gin';
-import { BlackjackScene } from './blackjack/scene.js?v=gin';
-import { RummyScene } from './rummy/scene.js?v=gin';
-import { ShitheadScene } from './shithead/scene.js?v=gin';
-import { SpadesScene } from './spades/scene.js?v=gin';
-import { SpeedScene } from './speed/scene.js?v=gin';
-import { BeggarScene } from './beggar/scene.js?v=gin';
-import { CribbageScene } from './cribbage/scene.js?v=gin';
-import { CasinoScene } from './casino/scene.js?v=gin';
-import { EuchreScene } from './euchre/scene.js?v=gin';
-import { PokerScene } from './poker/scene.js?v=gin';
-import { GinScene } from './gin/scene.js?v=gin';
-import { PresidentScene } from './president/scene.js?v=president';
-import { SlapjackScene } from './slapjack/scene.js?v=slapjack';
+import { cardBackHTML } from './cards.js?v=fourcolor';
+import { SparkleTrail } from './sparkles.js?v=fourcolor';
+import { LandingRipples } from './ripples.js?v=fourcolor';
+import { initLobby } from './lobby.js?v=fourcolor';
+import { GAMES } from './games.js?v=fourcolor';
+import { setScreenColor } from './theme.js';
+import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
+import { installGameMenu } from './gamemenu.js?v=fourcolor';
+import { initHud } from './hud.js?v=fourcolor';
+import { initFx } from './fx.js?v=fourcolor';
+import { playIntro } from './intro.js?v=fourcolor';
+import { SolitaireScene } from './solitaire/scene.js?v=fourcolor';
+import { WarScene } from './war/scene.js?v=fourcolor';
+import { EightsScene } from './eights/scene.js?v=fourcolor';
+import { GoFishScene } from './gofish/scene.js?v=fourcolor';
+import { BlackjackScene } from './blackjack/scene.js?v=fourcolor';
+import { PalaceScene } from './palace/scene.js?v=fourcolor';
+import { StressScene } from './stress/scene.js?v=fourcolor';
+import { SpeedScene } from './speed/scene.js?v=fourcolor';
+import { CasinoScene } from './casino/scene.js?v=fourcolor';
+import { GinScene } from './gin/scene.js?v=fourcolor';
+import { SlapjackScene } from './slapjack/scene.js?v=fourcolor';
 
 const $ = (id) => document.getElementById(id);
 const settings = loadSettings();
@@ -67,20 +66,13 @@ const SCENES = {
   solitaire: { title: 'Solitaire', make: (root, opts) => new SolitaireScene(root, opts) },
   war: { title: 'War', make: (root, opts) => new WarScene(root, opts) },
   'crazy-eights': { title: 'Crazy Eights', make: (root, opts) => new EightsScene(root, opts) },
-  'go-fish': { title: 'Go Fish', make: (root, opts) => new GoFishScene(root, opts) },
-  hearts: { title: 'Hearts', make: (root, opts) => new HeartsScene(root, opts) },
+  'go-fish': { title: 'Go Fish!', make: (root, opts) => new GoFishScene(root, opts) },
   blackjack: { title: 'Blackjack', make: (root, opts) => new BlackjackScene(root, opts) },
-  'rummy-500': { title: 'Rummy 500', make: (root, opts) => new RummyScene(root, opts) },
-  shithead: { title: 'Shithead', make: (root, opts) => new ShitheadScene(root, opts) },
-  spades: { title: 'Spades', make: (root, opts) => new SpadesScene(root, opts) },
+  palace: { title: 'Palace', make: (root, opts) => new PalaceScene(root, opts) },
+  stress: { title: 'Stress', make: (root, opts) => new StressScene(root, opts) },
   speed: { title: 'Speed', make: (root, opts) => new SpeedScene(root, opts) },
-  beggar: { title: 'Beggar-my-neighbour', make: (root, opts) => new BeggarScene(root, opts) },
-  cribbage: { title: 'Cribbage', make: (root, opts) => new CribbageScene(root, opts) },
   casino: { title: 'Casino', make: (root, opts) => new CasinoScene(root, opts) },
-  euchre: { title: 'Euchre', make: (root, opts) => new EuchreScene(root, opts) },
-  poker: { title: 'Texas Hold’em', make: (root, opts) => new PokerScene(root, opts) },
   gin: { title: 'Gin Rummy', make: (root, opts) => new GinScene(root, opts) },
-  president: { title: 'President', make: (root, opts) => new PresidentScene(root, opts) },
   slapjack: { title: 'Slapjack', make: (root, opts) => new SlapjackScene(root, opts) },
 };
 const scenes = {};
@@ -178,12 +170,15 @@ document.addEventListener(
 
 // Handy for poking at state from the devtools console.
 window.lab = { game, input, settings, device, sparkles, ripples };
+// Confetti, bursts, shakes and score pops for every game (fx.js).
+window.lab.fx = initFx(screenEl);
+// Avatars, the opponents' corner and the pills by your hand (hud.js).
+initHud(screenEl);
 
 // Lobby / routing. The lab stays loaded underneath; it is only shown (and
 // updated) on its route. Games are created the first time they're opened.
 let inLab = false;
 let view = 'lobby';
-const ZOOM_MS = 600; // opening a game from the lobby
 function openGame(id) {
   const def = SCENES[id];
   if (!def) return null;
@@ -198,6 +193,7 @@ function openGame(id) {
       },
     });
     scenes[id] = sc;
+    installGameMenu($(id)); // options and the exit live behind the … button
     window.lab[id] = sc;
     if (lastSize) sc.setSize(...lastSize);
   }
@@ -208,6 +204,12 @@ $('lab-back').addEventListener('click', () => {
   location.hash = '#/dev';
 });
 const lobbyNav = initLobby($('lobby'), {
+  haptic,
+  settings,
+  saveSettings: () => {
+    saveSettings(settings);
+    panel.refresh(); // the lab's side panel shows the same switches
+  },
   onRoute(route, { zoomFrom } = {}) {
     const lab = route.view === 'lab';
     const game = route.view === 'game' ? openGame(route.id) : null;
@@ -219,6 +221,9 @@ const lobbyNav = initLobby($('lobby'), {
     input.clearHover();
     if (current && current !== game) current.hide();
     current = game;
+    // A game keeps its lobby colors (matters when it is opened straight from a link).
+    const entry = game && GAMES.find((g) => g.id === route.id);
+    if (entry) setScreenColor(entry.color, entry.pop);
     game?.setMode?.(route.mode);
     game?.show();
     for (const v of ['lab', 'game', 'lobby']) document.body.classList.toggle(`route-${v}`, view === v);
@@ -226,76 +231,21 @@ const lobbyNav = initLobby($('lobby'), {
     document.title = lab ? 'The Deck Lab · Hand Feel' : game ? `The Deck · ${SCENES[route.id].title}` : 'The Deck';
     device.measure(); // the side panel only takes space in the lab
     if (game && zoomFrom) {
-      game.postpone?.(ZOOM_MS); // nothing moves until the zoom lands
-      zoomGame($(route.id), zoomFrom, 'in');
+      game.postpone?.(DEAL_AT); // the deal starts as the curtain of cards falls away
+      zoomGame($(route.id), 'in');
     } else if (leavingId) {
       // Back to the lobby: shrink the game back into its card.
       const rect = lobbyNav?.coverRect(leavingId);
-      if (rect) zoomGame($(leavingId), rect, 'out');
+      if (rect) zoomGame($(leavingId), 'out'); // (coverRect also brings that game back to the middle)
     }
   },
 });
 
-/**
- * Opening a game from the lobby ('in'): the game starts out shrunk to sit
- * inside the card that was tapped, and the camera zooms into that card (lobby
- * and game scale together) while a small circle in the middle of the card
- * grows to reveal the game. Leaving ('out') plays the same thing backwards.
- * All in #screen-local px, so the scaled desktop frame works.
- */
-let zoomRaf = 0;
+/** The card transition between the lobby and a game (transition.js). */
 let zoomEnd = null;
-function zoomGame(sceneEl, rect, dir) {
-  zoomEnd?.(); // finish a zoom that's still running
-  const screen = $('screen');
-  const lobbyEl = $('lobby');
-  const sr = screen.getBoundingClientRect();
-  const W = screen.offsetWidth;
-  const H = screen.offsetHeight;
-  const k = sr.width / W || 1;
-  const from = { x: (rect.left + rect.width / 2 - sr.left) / k, y: (rect.top + rect.height / 2 - sr.top) / k };
-  const s0 = rect.width / k / Math.min(W, H); // game's short side fits the cover
-  const r0 = Math.min(W, H) * 0.12;
-  const R = Math.hypot(W, H) / 2 + 2;
-  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-  const start = performance.now();
-  cancelAnimationFrame(zoomRaf);
-  document.body.classList.add('zooming');
-  // Leaving: the scene is already hidden by the router; keep it on screen until it's back in its card.
-  if (dir === 'out') sceneEl.classList.add('zoom-out');
-  lobbyEl.style.transformOrigin = `${from.x}px ${from.y}px`;
-  sceneEl.style.transformOrigin = '0 0';
-
-  const frame = (now) => {
-    const t = Math.min(1, (now - start) / ZOOM_MS);
-    const tt = dir === 'out' ? 1 - t : t;
-    const e = ease(tt);
-    const s = s0 + (1 - s0) * e; // game scale
-    const px = from.x + (W / 2 - from.x) * e; // where the game's center is
-    const py = from.y + (H / 2 - from.y) * e;
-    // Lobby zooms by the same factor around the cover, and follows it.
-    lobbyEl.style.transform = `translate(${(px - from.x).toFixed(2)}px, ${(py - from.y).toFixed(2)}px) scale(${(s / s0).toFixed(4)})`;
-    sceneEl.style.transform = `translate(${(px - (W / 2) * s).toFixed(2)}px, ${(py - (H / 2) * s).toFixed(2)}px) scale(${s.toFixed(4)})`;
-    const r = r0 + (R - r0) * ease(Math.min(1, tt * 1.08));
-    sceneEl.style.clipPath = `circle(${r.toFixed(1)}px at ${W / 2}px ${H / 2}px)`;
-    if (t < 1) {
-      zoomRaf = requestAnimationFrame(frame);
-      return;
-    }
-    zoomEnd();
-  };
-  zoomEnd = () => {
-    cancelAnimationFrame(zoomRaf);
-    zoomEnd = null;
-    for (const el of [lobbyEl, sceneEl]) {
-      el.style.transform = '';
-      el.style.transformOrigin = '';
-      el.style.clipPath = '';
-    }
-    sceneEl.classList.remove('zoom-out');
-    document.body.classList.remove('zooming');
-  };
-  zoomRaf = requestAnimationFrame(frame);
+function zoomGame(sceneEl, dir) {
+  zoomEnd?.(); // finish a transition that's still running
+  zoomEnd = playTransition({ screen: $('screen'), lobbyEl: $('lobby'), sceneEl, dir });
 }
 
 // Boot

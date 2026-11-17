@@ -14,8 +14,8 @@
 //   hidePlayButtons() return true to suppress the button over selected cards (optional)
 //   pileIndexAt(p)    which pile card is under point p, or -1 (optional; with
 //   onPileTap(i)      this, taps on the pile report the card that was hit)
-import { Game } from './game.js?v=middle-only-landings';
-import { CardSprite } from './cards.js?v=landing-burst';
+import { Game } from './game.js?v=fourcolor';
+import { CardSprite } from './cards.js?v=fourcolor';
 import { clamp } from './layout.js';
 
 export class RuleTable extends Game {

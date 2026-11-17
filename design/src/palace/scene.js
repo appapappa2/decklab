@@ -1,4 +1,4 @@
-// Shithead, singleplayer (you vs 1–3 CPUs) or pass-and-play (2–4 people on one
+// Palace (also known as Shithead), singleplayer (you vs 1–3 CPUs) or pass-and-play (2–4 people on one
 // device). Your hand is the lab's hand (RuleTable + Input); your six table
 // cards sit in three stacks above it. Before play, tap a hand card and then a
 // face-up card to swap them, then Ready. In play: select cards of one rank and
@@ -8,11 +8,11 @@
 // The rules object is the source of truth; sync() moves every sprite to where
 // the rules say its card is, and the springs animate the difference.
 import { Input } from '../input.js';
-import { cardBackHTML } from '../cards.js?v=landing-burst';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=rummy';
-import { Shithead, power } from './rules.js';
+import { cardBackHTML } from '../cards.js?v=fourcolor';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
+import { Palace, power } from './rules.js';
 
 const PILE_SCALE = 0.72;
 const DECK_SCALE = 0.6;
@@ -48,7 +48,7 @@ class PileTable extends RuleTable {
   }
 }
 
-export class ShitheadScene {
+export class PalaceScene {
   constructor(root, { device, settings, haptic, onExit }) {
     this.root = root;
     this.onExit = onExit;
@@ -103,7 +103,7 @@ export class ShitheadScene {
     const newBtn = h('button', 'game-btn small', 'New game');
     newBtn.type = 'button';
     newBtn.addEventListener('click', () => this.showSetup());
-    top.append(back, h('div', 'game-title', 'Shithead'), this.statusEl, newBtn);
+    top.append(back, h('div', 'game-title', 'Palace'), this.statusEl, newBtn);
 
     this.labels = [];
     this.pileInfo = h('div', 'rm-row-label sh-pile-info');
@@ -161,8 +161,9 @@ export class ShitheadScene {
     this.deckEl.style.transform = `scale(${DECK_SCALE})`;
     this.lay = { top, boxH, seatH, left, right, cx, actionsY, mineY, mineH, midY };
     const pos = (el, x, y, anchor) => (el.style.transform = `translate(${x}px, ${y}px) ${anchor}`);
-    pos(this.pileInfo, m.pz.x, midY + (ch * PILE_SCALE) / 2 + 16, 'translate(-50%, -50%)');
-    pos(this.actions, cx, actionsY, 'translate(-50%, -50%)');
+    // Starts at the pile's left edge, so it never runs into the stock's count next to it.
+    pos(this.pileInfo, m.pz.x - (m.cw * PILE_SCALE) / 2, midY + (ch * PILE_SCALE) / 2 + 16, 'translateY(-50%)');
+    pos(this.actions, right, actionsY, 'translate(-100%, -50%)'); // under your corner of the HUD
     pos(this.hintEl, cx, mineY - mineH / 2 - 14, 'translate(-50%, -50%)');
     pos(this.toastEl, cx, top + boxH + 6, 'translate(-50%, -50%)');
   }
@@ -248,10 +249,10 @@ export class ShitheadScene {
 
   showSetup() {
     const multi = this.mode === 'multi';
-    let count = Number(localStorage.getItem(`thedeck.shithead.count.${this.mode}`)) || (multi ? 2 : 3);
+    let count = Number(localStorage.getItem(`thedeck.palace.count.${this.mode}`)) || (multi ? 2 : 3);
     const c = this.overCard;
     c.innerHTML = '';
-    c.append(h('div', 'game-win-title', 'Shithead'));
+    c.append(h('div', 'game-win-title', 'Palace'));
     c.append(h('div', 'game-win-stats', multi ? 'Pass and play on this device' : 'You against the computer'));
     const row = h('div', 'rm-count');
     const opts = h('div', 'gs-toggle rm-count-opts');
@@ -277,8 +278,8 @@ export class ShitheadScene {
     const go = h('button', 'game-btn accent', 'Deal');
     go.type = 'button';
     go.addEventListener('click', () => {
-      localStorage.setItem(`thedeck.shithead.count.${this.mode}`, String(count));
-      const rules = new Shithead({ players: count });
+      localStorage.setItem(`thedeck.palace.count.${this.mode}`, String(count));
+      const rules = new Palace({ players: count });
       for (let p = 0; p < rules.n; p++) if (this.mode === 'single' && p !== 0) rules.cpuSwap(p);
       this.begin(rules);
     });
@@ -746,9 +747,9 @@ export class ShitheadScene {
     this.pickBtn.disabled = !mine || !r.canPickUp(me);
     let hint = '';
     if (me != null) {
-      if (swap) hint = 'Tap a hand card, then a face-up card to swap';
-      else if (mine && src === 'up') hint = 'Your hand is empty: tap a face-up card';
-      else if (mine && src === 'down') hint = 'Last cards: tap a face-down card to flip it';
+      if (swap) hint = 'Swap hand cards with face-up ones';
+      else if (mine && src === 'up') hint = 'Play your face-up cards';
+      else if (mine && src === 'down') hint = 'Flip a face-down card';
       else if (mine && r.canPickUp(me)) hint = 'Nothing fits: pick up the pile';
     }
     this.hintEl.textContent = hint;
@@ -770,13 +771,13 @@ export class ShitheadScene {
     c.innerHTML = '';
     const loser = names[r.loser];
     const you = this.mode === 'single' && r.loser === 0;
-    c.append(h('div', 'game-win-title', you ? "You're the Shithead!" : `${loser} is the Shithead`));
+    c.append(h('div', 'game-win-title', you ? 'You are last out' : `${loser} is last out`));
     if (this.mode === 'single') c.append(h('div', 'game-win-stats', r.finished[0] === 0 ? 'You went out first!' : you ? 'Better luck next time' : `You finished #${r.finished.indexOf(0) + 1}`));
     const table = h('table', 'hx-scores');
     table.innerHTML = '<tr><th>#</th><th></th><th></th></tr>';
     [...r.finished, r.loser].forEach((seat, i) => {
       const tr = h('tr', `${seat === 0 && this.mode === 'single' ? 'me' : ''}${i === 0 ? ' low' : ''}`);
-      for (const v of [String(i + 1), names[seat], seat === r.loser ? 'Shithead' : i === 0 ? 'Winner' : 'Out']) tr.append(h('td', '', v));
+      for (const v of [String(i + 1), names[seat], seat === r.loser ? 'Last' : i === 0 ? 'Winner' : 'Out']) tr.append(h('td', '', v));
       table.append(tr);
     });
     c.append(table);
@@ -822,7 +823,7 @@ export class ShitheadScene {
   // ----------------------------------------------------------- persistence
 
   saveKey() {
-    return `thedeck.shithead.${this.mode}.v1`;
+    return `thedeck.palace.${this.mode}.v1`;
   }
 
   save() {
@@ -837,7 +838,7 @@ export class ShitheadScene {
 
   load() {
     try {
-      return Shithead.restore(JSON.parse(localStorage.getItem(this.saveKey())));
+      return Palace.restore(JSON.parse(localStorage.getItem(this.saveKey())));
     } catch {
       return null;
     }

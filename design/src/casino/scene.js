@@ -3,10 +3,10 @@
 // you want, then Capture, Build or Trail. Dragging a card up plays it the
 // obvious way: capture the most it can (or what you picked), otherwise trail.
 import { Input } from '../input.js';
-import { cardBackHTML } from '../cards.js?v=landing-burst';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=rummy';
+import { cardBackHTML } from '../cards.js?v=fourcolor';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
 import { Casino, cardsOf, itemId, val } from './rules.js';
 
 const SEAT_SCALE = 0.45;
@@ -151,7 +151,7 @@ export class CasinoScene {
       pos(this.actions, right, (tableTop + tableBottom) / 2 + 14, 'translate(-100%, -50%)');
       pos(this.hintEl, right, (tableTop + tableBottom) / 2 - 16, 'translate(-100%, -50%)');
     } else {
-      pos(this.actions, cx, actionsY, 'translate(-50%, -50%)');
+      pos(this.actions, right, actionsY, 'translate(-100%, -50%)'); // under your corner of the HUD
       pos(this.hintEl, cx, actionsY - 26, 'translate(-50%, -50%)');
     }
     this.hintEl.classList.toggle('cs-hint-right', land);
@@ -633,11 +633,12 @@ export class CasinoScene {
     this.buildBtn.disabled = bv === null;
     this.buildBtn.textContent = bv === null ? 'Build' : `Build ${bv}`;
     this.trailBtn.disabled = !mine || !card || picked.length > 0 || !r.canTrail(this.viewer, card);
+    this.root.classList.toggle('my-turn', !!mine); // the HUD rings your avatar
     let hint = '';
     if (mine) {
       const own = r.owned(this.viewer)[0];
       if (!card) hint = own ? `You're building ${own.value}: take it when you can` : 'Tap a card in your hand';
-      else if (!picked.length) hint = r.bestCapture(card).length ? 'Capture takes the glowing cards, or tap the ones you want' : 'Tap table cards to build, or trail';
+      else if (!picked.length) hint = r.bestCapture(card).length ? 'Capture the glowing cards, or pick others' : 'Tap table cards to build, or trail';
       else hint = `${picked.length} picked`;
     } else if (this.viewer != null && r.phase === 'play') hint = `${names[r.turn]}’s turn…`;
     this.hintEl.textContent = hint;

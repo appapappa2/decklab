@@ -2,7 +2,7 @@
 // Split (buttons or H S D P; Space or Enter deals). The rules resolve each
 // action at once and return events; the scene plays them back card by card,
 // keeping its own picture of the table (`vis`) in step with the animation.
-import { CardSprite, cardBackHTML } from '../cards.js?v=landing-burst';
+import { CardSprite, cardBackHTML } from '../cards.js?v=fourcolor';
 import { Blackjack, CHIPS, START_BANK, handValue } from './rules.js';
 
 const SAVE_KEY = 'thedeck.blackjack.v1';

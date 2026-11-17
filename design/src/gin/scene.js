@@ -4,10 +4,10 @@
 // stock or the discard pile; discard by dragging a card up or selecting it and
 // pressing Discard; Knock (or Gin) discards the selected card and ends the hand.
 import { Input } from '../input.js';
-import { cardBackHTML } from '../cards.js?v=landing-burst';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=rummy';
+import { cardBackHTML } from '../cards.js?v=fourcolor';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
 import { GinRummy, arrange, KNOCK_MAX } from './rules.js';
 
 const PILE_SCALE = 0.72;
@@ -411,7 +411,7 @@ export class GinScene {
   pileIndexAt(p) {
     const at = this.discardAt;
     const m = this.table.m;
-    if (!this.rules.discard.length) return -1;
+    if (!this.rules?.discard.length) return -1; // no hand dealt yet
     return Math.abs(p.x - at.x) < (m.cw * PILE_SCALE) / 2 + 6 && Math.abs(p.y - at.y) < (m.ch * PILE_SCALE) / 2 + 6 ? this.rules.discard.length - 1 : -1;
   }
 
@@ -604,9 +604,10 @@ export class GinScene {
     const after = canDisc ? r.deadwoodAfter(me, sel.card.id) : null;
     this.knockBtn.disabled = !canDisc || after > KNOCK_MAX;
     this.knockBtn.textContent = after === 0 ? 'Gin!' : 'Knock';
+    this.root.classList.toggle('my-turn', !!mine); // the HUD rings your avatar
     let hint = '';
     if (mine) {
-      if (r.phase === 'offer') hint = 'First turn: tap the upcard to take it, or pass';
+      if (r.phase === 'offer') hint = 'Take the upcard, or pass';
       else if (r.phase === 'draw') hint = 'Tap the stock or the discard pile';
       else if (!sel) hint = 'Drag a card up to discard, or tap one';
     } else if (me != null && ['offer', 'draw', 'discard'].includes(r.phase)) hint = `${names[r.turn]}’s turn…`;

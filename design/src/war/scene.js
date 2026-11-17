@@ -1,7 +1,7 @@
 // War vs. a CPU opponent. Tap (or Space) to flip; the CPU flips right after
 // you. Auto-play runs rounds by itself. Same scene interface as Solitaire:
 // setSize, show, hide, update, cancel.
-import { CardSprite } from '../cards.js?v=landing-burst';
+import { CardSprite } from '../cards.js?v=fourcolor';
 import { War, PLAYERS } from './rules.js';
 
 const SAVE_KEY = 'thedeck.war.v1';
@@ -86,7 +86,6 @@ export class WarScene {
       this.labels[p] = el;
     }
     this.bannerEl = h('div', 'war-banner');
-    this.hintEl = h('div', 'war-hint', 'Tap to flip');
 
     this.overEl = h('div', 'game-win');
     const card = h('div', 'game-win-card');
@@ -103,7 +102,7 @@ export class WarScene {
     card.append(this.overTitle, this.overStats, row);
     this.overEl.append(card);
 
-    r.append(this.cardsEl, this.labels.cpu, this.labels.you, this.bannerEl, this.hintEl, top, bottom, this.overEl);
+    r.append(this.cardsEl, this.labels.cpu, this.labels.you, this.bannerEl, top, bottom, this.overEl);
   }
 
   addSprite(card) {
@@ -176,10 +175,6 @@ export class WarScene {
       if (landscape) el.style.transform = `translate(${d.x}px, ${d.y + ch / 2 + 12}px) translateX(-50%)`;
       else el.style.transform = `translate(${d.x + cw / 2 + 14}px, ${d.y}px) translateY(-50%)`;
     }
-    const you = pts.you.deck;
-    this.hintEl.style.transform = landscape
-      ? `translate(${you.x}px, ${you.y - ch / 2 - 30}px) translateX(-50%)`
-      : `translate(${you.x - cw / 2 - 14}px, ${you.y}px) translate(-100%, -50%)`;
     this.bannerEl.style.transform = `translate(${cx}px, ${landscape ? cy + ch * 0.62 : cy}px) translate(-50%, -50%)`;
   }
 
@@ -372,8 +367,6 @@ export class WarScene {
     this.autoBtn.textContent = this.auto ? 'Stop' : 'Auto-play';
     this.autoBtn.classList.toggle('accent', this.auto);
     this.autoBtn.disabled = !!g.winner;
-    this.hintEl.classList.toggle('show', !this.auto && !g.winner);
-    this.hintEl.textContent = g.atWar ? 'Tap to go to war' : 'Tap to flip';
   }
 
   // ------------------------------------------------------------------ input

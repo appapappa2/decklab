@@ -66,7 +66,7 @@ export class LandingRipples {
     if (Array.isArray(game?.landingEvents) && Number.isFinite(cw) && cw > 0) {
       const seen = new Set();
       for (const sprite of game.landingEvents) {
-        if (!sprite?.isFoil || seen.has(sprite)) continue;
+        if (!sprite || seen.has(sprite)) continue; // every card that lands makes a ripple
         seen.add(sprite);
         const x = sprite.x?.v;
         const y = sprite.y?.v;
@@ -74,7 +74,8 @@ export class LandingRipples {
         if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(scale) || scale <= 0) continue;
         if (this.ripples.length === MAX_RIPPLES) this.ripples.shift();
         // Store numbers, rather than the sprite, so the wave stays on the table.
-        this.ripples.push({ x, y, size: cw * scale, age: 0 });
+        // Aces and court cards land harder.
+        this.ripples.push({ x, y, size: cw * scale * (sprite.isFoil ? 1 : 0.72), age: 0 });
       }
     }
     if (!this.ripples.length) {

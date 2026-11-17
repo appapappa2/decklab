@@ -1,25 +1,39 @@
-// Speed (Stress) against a CPU, in real time. Your hand is the lab's hand
+// Speed against a CPU, in real time. Your hand is the lab's hand
 // (RuleTable + Input): tap a card to play it wherever it fits, or drag it onto
 // the center pile you want. The CPU plays on its own clock (Easy / Normal /
 // Hard); when nobody can play, the side piles flip after a short pause.
+//
+// Stress (stress/scene.js) is the same table with different rules: everything
+// that differs between the two is in the `game` description below or in a
+// method the Stress scene overrides.
 import { Input } from '../input.js';
-import { cardBackHTML } from '../cards.js?v=landing-burst';
-import { SparkleTrail } from '../sparkles.js?v=landing-burst';
-import { LandingRipples } from '../ripples.js?v=water-ripple';
-import { RuleTable } from '../table.js?v=rummy';
+import { cardBackHTML } from '../cards.js?v=fourcolor';
+import { SparkleTrail } from '../sparkles.js?v=fourcolor';
+import { LandingRipples } from '../ripples.js?v=fourcolor';
+import { RuleTable } from '../table.js?v=fourcolor';
 import { Speed, fits } from './rules.js';
 
-const CENTER_SCALE = 0.8;
-const SIDE_SCALE = 0.62;
+export const SIDE_SCALE = 0.62;
 const CPU_SCALE = 0.55;
-const STUCK_MS = 1300; // pause before the side piles flip
-const LEVELS = {
+export const LEVELS = {
   easy: { label: 'Easy', ms: 1700 },
   normal: { label: 'Normal', ms: 1050 },
   hard: { label: 'Hard', ms: 650 },
 };
-const SAVE_LEVEL = 'thedeck.speed.level';
-const BEST_KEY = 'thedeck.speed.best';
+const SPEED = {
+  title: 'Speed',
+  rules: () => new Speed(),
+  saveLevel: 'thedeck.speed.level',
+  bestKey: 'thedeck.speed.best',
+  intro: 'Race the CPU: play one up or one down, as fast as you can',
+  how: 'Tap a card to play it · drag to choose a pile',
+  stuckMs: 1300, // pause before the piles flip
+  cpuFaceUp: false, // the CPU's cards are a hidden hand
+  cpuSpread: 0.55, // how far apart they sit, in (scaled) card widths
+  centerScale: 0.8, // size of the middle piles
+  levelTitle: 'CPU', // label of the level picker on the setup card
+  levelNames: {}, // other names for the levels (Stress calls Normal "Medium")
+};
 
 const h = (tag, cls, html) => {
   const el = document.createElement(tag);
@@ -45,11 +59,12 @@ class CenterTable extends RuleTable {
 }
 
 export class SpeedScene {
-  constructor(root, { device, settings, haptic, onExit }) {
+  constructor(root, { device, settings, haptic, onExit }, game = SPEED) {
     this.root = root;
     this.onExit = onExit;
+    this.game = game;
     this.rules = null;
-    this.level = LEVELS[localStorage.getItem(SAVE_LEVEL)] ? localStorage.getItem(SAVE_LEVEL) : 'normal';
+    this.level = LEVELS[localStorage.getItem(game.saveLevel)] ? localStorage.getItem(game.saveLevel) : 'normal';
     this.byId = new Map();
     this.cpu = [];
     this.sides = [[], []];
@@ -107,7 +122,7 @@ export class SpeedScene {
     const newBtn = h('button', 'game-btn small', 'New game');
     newBtn.type = 'button';
     newBtn.addEventListener('click', () => this.showSetup());
-    top.append(back, h('div', 'game-title', 'Speed'), this.clockEl, newBtn);
+    top.append(back, h('div', 'game-title', this.game.title), this.clockEl, newBtn);
 
     this.cpuLabel = h('div', 'rm-label sd-label');
     this.youLabel = h('div', 'rm-label sd-label');
@@ -140,6 +155,7 @@ export class SpeedScene {
     const cpuH = ch * CPU_SCALE;
     const cpuY = safe.top + 46 + cpuH / 2 + 10;
     const midY = (cpuY + cpuH / 2 + m.handTop) / 2 - ch * 0.05;
+    const CENTER_SCALE = this.game.centerScale;
     const gap = cw * CENTER_SCALE * 0.62;
     const sideX = Math.min(cx - gap - cw * CENTER_SCALE * 0.5 - cw * SIDE_SCALE * 0.75, cx - cw * 1.25);
     this.lay = {
@@ -163,7 +179,9 @@ export class SpeedScene {
     pos(this.cpuLabel, right, cpuY, 'translate(-100%, -50%)');
     pos(this.youLabel, m.deck.x + (cw * SIDE_SCALE) / 2 + 10, m.deck.y, 'translateY(-50%)');
     pos(this.statusEl, cx, midY + (ch * CENTER_SCALE) / 2 + 16, 'translate(-50%, -50%)');
-    pos(this.bannerEl, cx, midY, 'translate(-50%, -50%)');
+    // Placed with left/top (centered by `translate` in style.css) so it pops from its own center.
+    this.bannerEl.style.left = `${cx}px`;
+    this.bannerEl.style.top = `${midY}px`;
   }
 
   // ------------------------------------------------------------ game setup
@@ -174,31 +192,31 @@ export class SpeedScene {
     this.phase = 'setup';
     const c = this.overCard;
     c.innerHTML = '';
-    c.append(h('div', 'game-win-title', 'Speed'));
-    c.append(h('div', 'game-win-stats', 'Race the CPU: play one up or one down, as fast as you can'));
+    c.append(h('div', 'game-win-title', this.game.title));
+    c.append(h('div', 'game-win-stats', this.game.intro));
     const row = h('div', 'rm-count');
     const opts = h('div', 'gs-toggle rm-count-opts sd-levels');
     const paint = () => {
       for (const b of opts.children) b.setAttribute('aria-checked', String(b.dataset.level === this.level));
     };
-    for (const [key, l] of Object.entries(LEVELS)) {
-      const b = h('button', 'gs-toggle-btn', l.label);
+    for (const key of Object.keys(LEVELS)) {
+      const b = h('button', 'gs-toggle-btn', this.levelName(key));
       b.type = 'button';
       b.dataset.level = key;
       b.setAttribute('role', 'radio');
       b.addEventListener('click', () => {
         this.level = key;
-        localStorage.setItem(SAVE_LEVEL, key);
+        localStorage.setItem(this.game.saveLevel, key);
         paint();
       });
       opts.append(b);
     }
     paint();
-    row.append(h('div', 'rm-count-label', 'CPU'), opts);
+    row.append(h('div', 'rm-count-label', this.game.levelTitle), opts);
     c.append(row);
-    c.append(h('div', 'game-win-stats', 'Tap a card to play it · drag to choose a pile'));
-    const best = Number(localStorage.getItem(`${BEST_KEY}.${this.level}`));
-    if (best) c.append(h('div', 'game-win-stats', `Best win on ${LEVELS[this.level].label}: ${fmt(best)}`));
+    c.append(h('div', 'game-win-stats', this.game.how));
+    const best = this.game.bestKey && Number(localStorage.getItem(`${this.game.bestKey}.${this.level}`));
+    if (best) c.append(h('div', 'game-win-stats', `Best win on ${this.levelName()}: ${fmt(best)}`));
     const actions = h('div', 'game-win-actions');
     const go = h('button', 'game-btn accent', 'Start');
     go.type = 'button';
@@ -222,7 +240,7 @@ export class SpeedScene {
     this.cpu = [];
     this.sides = [[], []];
     this.pileOf.clear();
-    this.rules = new Speed();
+    this.rules = this.game.rules();
     this.overEl.classList.remove('show');
     this.phase = 'countdown';
     this.elapsed = 0;
@@ -313,7 +331,7 @@ export class SpeedScene {
       sp.z = 10 + at.depth;
       if (sp.waitUntil > now) return;
       const lift = Math.min(n - 1 - at.depth, 4);
-      sp.target(this.lay.centers[at.i] - lift * 0.4, this.lay.midY - lift * 0.6, sp.pileRot ?? 0, CENTER_SCALE, live ? 0 : 1, 0);
+      sp.target(this.lay.centers[at.i] - lift * 0.4, this.lay.midY - lift * 0.6, sp.pileRot ?? 0, this.game.centerScale, live ? 0 : 1, 0);
     });
   }
 
@@ -389,21 +407,25 @@ export class SpeedScene {
         this.resumeElapsed = 0;
         this.cpuAt = now + this.cpuDelay() * 1.2;
         this.banner('Go!', 'go', 600);
+        this.updateHUD(); // the hint appears with Go, not after the first move
         this.table.haptic(20);
       } else if (left < 2400) {
         const n = Math.ceil(left / 800);
         if (n !== this._count) {
           this._count = n;
-          this.banner(String(n), 'count', 700);
+          this.banner(String(n), `count n${n}`, 700); // each number in its own color (style.css)
         }
       }
     }
     if (this.phase === 'play') {
       this.elapsed = now - this.startedAt;
-      if (r.stuck) {
+      this.tick(now);
+    }
+    if (this.phase === 'play') {
+      if (r.stuck && this.canFlip(now)) {
         if (!this.stuckAt) {
-          this.stuckAt = now + STUCK_MS;
-          this.banner(r.sides[0].length || r.sides[1].length ? 'No moves: flipping' : 'No moves: reshuffling', 'info', STUCK_MS);
+          this.stuckAt = now + this.game.stuckMs;
+          this.banner(this.stuckText(r), this.stuckKind(r), this.game.stuckMs);
         } else if (now >= this.stuckAt) {
           this.stuckAt = 0;
           const res = r.flip();
@@ -437,6 +459,26 @@ export class SpeedScene {
     this.updateClock();
   }
 
+  /** Called every frame of play, before the moves. Stress watches for matching piles here. */
+  tick() {}
+
+  /** Nobody can play: may the piles flip now? Stress holds off while a call is open. */
+  canFlip() {
+    return true;
+  }
+
+  stuckKind() {
+    return 'info';
+  }
+
+  stuckText(r) {
+    return r.sides[0].length || r.sides[1].length ? 'No moves: flipping' : 'No moves: reshuffling';
+  }
+
+  statusText() {
+    return 'One up or one down';
+  }
+
   cpuDelay() {
     return LEVELS[this.level].ms * (0.75 + Math.random() * 0.55);
   }
@@ -449,7 +491,11 @@ export class SpeedScene {
     const n = this.cpu.length;
     this.cpu.forEach((sp, i) => {
       if (now < sp.waitUntil) sp.target(cx, midY, 0, SIDE_SCALE, 1, 0);
-      else sp.target(cx + (i - (n - 1) / 2) * cw * 0.55, cpuY - Math.min((i - (n - 1) / 2) ** 2, 4), -(i - (n - 1) / 2) * 3, CPU_SCALE, this.phase === 'over' ? 0 : 1, 0);
+      else {
+        const k = i - (n - 1) / 2;
+        const up = this.game.cpuFaceUp;
+        sp.target(cx + k * cw * this.game.cpuSpread, cpuY - (up ? 0 : Math.min(k ** 2, 4)), up ? 0 : -k * 3, CPU_SCALE, up || this.phase === 'over' ? 0 : 1, 0);
+      }
       sp.z = 70 + i;
       sp.step(dt, s.stiffness, s.damping);
       sp.render();
@@ -480,8 +526,25 @@ export class SpeedScene {
     if (kind === 'bad') this.root.classList.add('sd-bad');
   }
 
+  levelName(key = this.level) {
+    return this.game.levelNames[key] ?? LEVELS[key].label;
+  }
+
+  /** The status pill during a game. */
+  clockText() {
+    return `${this.levelName()} · ${fmt(this.elapsed)}`;
+  }
+
+  /** The line under the title of the result card. */
+  resultLines(won, time, record) {
+    const lines = [`${fmt(time)} on ${this.levelName()}`];
+    if (!won) lines.push(`You had ${this.rules.cardsLeft(0)} cards left`);
+    if (record) lines.push('New best time!');
+    return lines;
+  }
+
   updateClock() {
-    const t = this.phase === 'setup' ? '' : `${LEVELS[this.level].label} · ${fmt(this.elapsed)}`;
+    const t = this.phase === 'setup' ? '' : this.clockText();
     if (t !== this._clock) {
       this._clock = t;
       this.clockEl.textContent = t;
@@ -495,12 +558,11 @@ export class SpeedScene {
       this.youLabel.textContent = '';
       return;
     }
-    this.cpuLabel.innerHTML = `<div class="rm-name">CPU</div><div class="rm-sub">${r.cardsLeft(1)} left</div>`;
-    this.youLabel.innerHTML = `<div class="rm-name">You</div><div class="rm-sub">${r.cardsLeft(0)} left</div>`;
-    this.cpuCountEl.textContent = r.stocks[1].length ? `${r.stocks[1].length}` : '';
+    this.cpuLabel.innerHTML = `<div class="rm-name">CPU</div><div class="rm-sub">${r.cardsLeft(1)} cards</div>`;
+    this.youLabel.innerHTML = `<div class="rm-name">You</div><div class="rm-sub">${r.cardsLeft(0)} cards</div>`;
+    this.cpuCountEl.textContent = r.stocks[1].length ? `${r.stocks[1].length} left` : '';
     this.cpuDeckEl.classList.toggle('empty', !r.stocks[1].length);
-    const sides = r.sides[0].length + r.sides[1].length;
-    this.statusEl.textContent = this.phase === 'play' ? `One up or one down · ${sides} in the side piles` : '';
+    this.statusEl.textContent = this.phase === 'play' ? this.statusText(r) : '';
   }
 
   finish() {
@@ -510,9 +572,9 @@ export class SpeedScene {
     const r = this.rules;
     const won = r.winner === 0;
     const time = this.elapsed;
-    const key = `${BEST_KEY}.${this.level}`;
+    const key = `${this.game.bestKey}.${this.level}`;
     const best = Number(localStorage.getItem(key)) || 0;
-    const record = won && (!best || time < best);
+    const record = !!this.game.bestKey && won && (!best || time < best);
     if (record) localStorage.setItem(key, String(Math.round(time)));
     this.table.haptic(won ? [10, 40, 10, 40, 10] : 20);
     this.sync();
@@ -520,10 +582,7 @@ export class SpeedScene {
       const c = this.overCard;
       c.innerHTML = '';
       c.append(h('div', 'game-win-title', won ? 'You won!' : 'CPU wins'));
-      const lines = [`${fmt(time)} on ${LEVELS[this.level].label}`];
-      if (!won) lines.push(`You had ${r.cardsLeft(0)} cards left`);
-      if (record) lines.push('New best time!');
-      c.append(h('div', 'game-win-stats', lines.join(' · ')));
+      c.append(h('div', 'game-win-stats', this.resultLines(won, time, record).join(' · ')));
       const row = h('div', 'game-win-actions');
       const again = h('button', 'game-btn accent', 'Play again');
       again.type = 'button';

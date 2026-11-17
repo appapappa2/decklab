@@ -1,4 +1,4 @@
-import { CardSprite, createDeck, shuffle } from './cards.js?v=landing-burst';
+import { CardSprite, createDeck, shuffle } from './cards.js?v=fourcolor';
 import { clamp, computeMetrics, handSlots, nearestSlot } from './layout.js';
 import { Spring } from './spring.js';
 import { VelocityTracker } from './velocity.js';
