@@ -9,6 +9,7 @@ import { SUIT_ART } from './cards.js?v=fourcolor';
 import { Spring } from './spring.js';
 import { THEMES, getTheme, setTheme, cycleTheme, setScreenColor } from './theme.js';
 import { createProfile } from './profile.js?v=fourcolor';
+import { sfx, soundOn, setSoundOn } from './sfx.js';
 
 const INDEX_KEY = 'thedeck.lobby.game';
 const modeKey = (id) => `thedeck.lobby.mode.${id}`;
@@ -276,6 +277,9 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     const themeRow = row('Backdrop', THEMES.map((t) => [t, `${t[0].toUpperCase()}${t.slice(1)}`]), getTheme, setTheme);
     themeRow.classList.add('gs-theme-row');
     card.append(themeRow);
+    card.append(
+      Object.assign(row('Sound', [['on', 'On'], ['off', 'Off']], () => (soundOn() ? 'on' : 'off'), (v) => setSoundOn(v === 'on')), { className: 'gs-sheet-row gs-sound-row' }),
+    );
     if (settings) {
       card.append(
         row('Haptics', [['on', 'On'], ['off', 'Off']], () => (settings.haptics ? 'on' : 'off'), (v) => {
@@ -301,7 +305,9 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
   }
 
   function toggleSettings(open) {
-    carousel.ui?.sheet?.classList.toggle('show', open);
+    const sheet = carousel.ui?.sheet;
+    if (sheet && sheet.classList.contains('show') !== !!open) sfx(open ? 'sheet-open' : 'sheet-close');
+    sheet?.classList.toggle('show', open);
   }
   const settingsOpen = () => !!carousel.ui?.sheet?.classList.contains('show') || !!carousel.ui?.profile?.isOpen();
 
@@ -315,6 +321,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
 
   /** One game left or right of where the carousel is heading (so quick presses add up). */
   function step(d) {
+    sfx('swipe');
     goTo(Math.round(carousel.pos.t) + d);
   }
 
@@ -322,12 +329,14 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     const g = carousel.games[carousel.index];
     if (!g) return;
     if (isReady(g)) {
+      sfx('play-game');
       haptic(12);
       // Tell the router where the cover is, so the game can zoom out of it.
       const cover = carousel.items[carousel.index]?.querySelector('.cv');
       pendingZoom = cover ? cover.getBoundingClientRect() : null;
       location.hash = modeOf(g) === 'multi' ? `${g.route}/multi` : g.route;
     } else {
+      sfx('error');
       haptic([10, 40, 10]);
       nudge(carousel.ui.playbar);
       showToast(`${g.name} ${modeOf(g) === 'multi' ? 'multiplayer ' : ''}is coming soon`);
@@ -351,7 +360,10 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     localStorage.setItem(INDEX_KEY, g.id);
     const { title, sub, meta, dots } = c.ui;
     setScreenColor(g.color, g.pop);
-    if (c.ready) haptic(6); // a detent for every game that passes the middle
+    if (c.ready) {
+      haptic(6); // a detent for every game that passes the middle
+      sfx('land');
+    }
     c.ready = true;
     title.textContent = g.name;
     title.style.setProperty('--len', String(Math.max(9, g.name.length)));
@@ -374,6 +386,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     const g = carousel.games[carousel.index];
     if (!g || !g.modes.includes(key) || modeOf(g) === key) return;
     localStorage.setItem(modeKey(g.id), key);
+    sfx(key === 'multi' ? 'toggle-on' : 'toggle-off');
     haptic(8);
     updateMode(g);
     const { sub } = carousel.ui;
@@ -538,6 +551,10 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     else if (e.key.toLowerCase() === 't') cycleTheme();
     else return;
     e.preventDefault();
+  });
+  // The sound switch follows the devboard's.
+  window.addEventListener('soundchange', () => {
+    for (const b of root.querySelectorAll('.gs-sound-row .gs-toggle-btn')) b.setAttribute('aria-checked', String(b.dataset.value === (soundOn() ? 'on' : 'off')));
   });
   // The backdrop switch follows the theme, wherever it was changed from.
   window.addEventListener('themechange', () => {

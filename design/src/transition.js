@@ -8,6 +8,7 @@
 // so it is the same for every game and needs nothing from them.
 import { createDeck, faceHTML } from './cards.js?v=fourcolor';
 import { reducedMotion } from './motion.js';
+import { sfx } from './sfx.js';
 
 const UP_MS = 480; // ms from launch until the card has all but stopped at the top
 const HANG_MS = 150; // ms it floats there, barely moving
@@ -27,6 +28,7 @@ const reduced = reducedMotion; // the system setting, unless the devboard overri
 export function playTransition({ screen, lobbyEl, sceneEl, dir }) {
   const W = screen.offsetWidth;
   const H = screen.offsetHeight;
+  sfx('curtain');
   document.body.classList.add('zooming');
   if (dir === 'out') sceneEl.classList.add('zoom-out'); // keep the table on screen until it is covered
   const lobbyView = lobbyEl.firstElementChild ?? lobbyEl;

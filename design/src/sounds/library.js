@@ -80,6 +80,18 @@ export const SOUNDS = [
     ],
   },
   {
+    id: 'count', group: 'effects', name: 'Count', hint: 'One beep of a 3, 2, 1 (Speed, Stress)',
+    make: () => [L({ ...BLIP, vco: { pw: 0 }, vcf: { freq: 2600, res: 0.2, env: 0.3, kybd: 0.5 }, env: { a: 0.002, d: 0.2, s: 0.4, r: 0.1 } }, [['A5', 0, 0.14]])],
+  },
+  {
+    id: 'go', group: 'effects', name: 'Go!', hint: 'The end of a countdown',
+    make: () => [
+      L({ ...BRASS, mix: { saw: 1, pulse: 0.5, sub: 0.4 }, vcf: { freq: 1500, res: 0.3, env: 0.5 } }, [['A6', 0, 0.4]]),
+      L(BLIP, [['E7', 0, 0.05], ['A7', 0.05, 0.08]]),
+      L({ ...HISS, vcf: { freq: 400, res: 0.25, env: 0.8, kybd: 0 }, env: { a: 0.002, d: 0.4, s: 0, r: 0.3 }, vol: 0.6 }, [['C4', 0, 0.2]]),
+    ],
+  },
+  {
     id: 'win', group: 'effects', name: 'Win', hint: 'Fanfare, then fireworks',
     make: () => [
       L(BRASS, [['C5', 0, 0.1], ['E5', 0.1, 0.1], ['G5', 0.2, 0.1], ['C6', 0.3, 0.55]]),

@@ -2,6 +2,8 @@
 // its own option buttons (New game, Auto-play, Draw 1/3…); this moves them out
 // of the bars into one menu, together with the way back to the lobby.
 
+import { sfx } from './sfx.js';
+
 const el = (tag, cls, html = '') => {
   const e = document.createElement(tag);
   e.className = cls;
@@ -45,6 +47,7 @@ export function installGameMenu(scene) {
   for (const b of panel.children) b.setAttribute('role', 'menuitem');
 
   const set = (open) => {
+    if (scene.classList.contains('gm-open') !== open) sfx(open ? 'sheet-open' : 'sheet-close');
     scene.classList.toggle('gm-open', open);
     more.setAttribute('aria-expanded', String(open));
   };

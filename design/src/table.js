@@ -17,6 +17,7 @@
 import { Game } from './game.js?v=fourcolor';
 import { CardSprite } from './cards.js?v=fourcolor';
 import { clamp } from './layout.js';
+import { sfx } from './sfx.js';
 
 export class RuleTable extends Game {
   constructor(els, settings, haptic, scene, { buttonLabel = 'Play' } = {}) {
@@ -48,6 +49,7 @@ export class RuleTable extends Game {
       return;
     }
     // Back into the hand where it was dropped (or came from).
+    sfx('invalid');
     const d = this.releasing;
     let idx = this.hand.length;
     if (d) idx = this.s.reorder && d.gapIndex >= 0 ? d.gapIndex : d.fromIndex;
