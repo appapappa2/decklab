@@ -1,4 +1,5 @@
 import { Spring } from './spring.js';
+import { reducedMotion } from './motion.js';
 
 export const SUITS = [
   { id: 'S', name: 'spades', red: false, order: 0 },
@@ -7,8 +8,7 @@ export const SUITS = [
   { id: 'D', name: 'diamonds', red: true, order: 3 },
 ];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-const motionPreference = typeof window !== 'undefined' && window.matchMedia
-  ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+const motionPreference = reducedMotion; // the system setting, unless the devboard overrides it
 const clamp = (value, limit) => Math.min(limit, Math.max(-limit, value));
 
 // Rounded, consistent silhouettes instead of platform-dependent suit glyphs.

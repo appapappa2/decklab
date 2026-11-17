@@ -60,6 +60,29 @@ body.devboard #devboard-bar {
 }
 .db-tabs button:hover { color: var(--text); }
 .db-tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); }
+/* Full motion switch, at the far right of the bar. */
+#db-motion {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid #2c323b;
+  border-radius: 999px;
+  background: #171b21;
+  color: var(--muted);
+  font-weight: 600;
+}
+#db-motion::before {
+  content: '';
+  width: 26px;
+  height: 16px;
+  border-radius: 999px;
+  background: #2c323b radial-gradient(circle 6px at 8px 50%, var(--muted) 98%, transparent) no-repeat;
+  transition: background .15s;
+}
+#db-motion[aria-checked="true"] { color: var(--text); }
+#db-motion[aria-checked="true"]::before { background: var(--accent) radial-gradient(circle 6px at 18px 50%, #0a0c0f 98%, transparent) no-repeat; }
 
 #devboard-body { flex: 1; min-height: 0; display: flex; }
 .db-pane { flex: 1; min-width: 0; display: flex; }
@@ -296,8 +319,11 @@ body:not(.devboard) .db-pane:not(#pane-game) { display: none; }
   --hi-edge: color-mix(in srgb, var(--hi) 72%, var(--ink-c));
   --scrim: color-mix(in srgb, var(--ink-c) 42%, transparent);
 }
+/* Cut short under the system's "Reduce motion", unless the devboard's "Full motion" is on (motion.js). */
 @media (prefers-reduced-motion: reduce) {
-  #screen *, #screen *::before, #screen *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+  :root:not([data-motion="full"]) #screen *,
+  :root:not([data-motion="full"]) #screen *::before,
+  :root:not([data-motion="full"]) #screen *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
 }
 
 .island {

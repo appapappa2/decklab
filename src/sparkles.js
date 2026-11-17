@@ -1,3 +1,4 @@
+import { reducedMotion } from './motion.js';
 const MAX_PARTICLES = 45;
 const MAX_EMISSION = 6;
 const EMISSION_RATE = 90;
@@ -21,7 +22,7 @@ export class SparkleTrail {
     this.frame = 0;
     this.budget = 0;
     this.painted = false;
-    this.motionQuery = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.motionQuery = reducedMotion; // the system setting, unless the devboard overrides it
     this.reduced = this.motionQuery?.matches ?? false;
     this.onMotionChange = (event) => {
       this.reduced = event.matches;

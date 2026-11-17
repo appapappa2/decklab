@@ -18,6 +18,8 @@ Use `serve.py` rather than `python3 -m http.server`. The stock server only queue
   - **Animations:** a second phone showing a Stress table that deals and then holds still (not playable), with the **effects board** beside it.
   - **Sounds:** an empty space for sound tests.
 
+  **Full motion**, at the right of the bar, plays every animation even when *Reduce motion* is on in the system settings (`src/motion.js`; every reduced-motion check in the app goes through it). It is on by default on desktop; a real phone follows the system. The embedded Stress table follows the switch too.
+
   The devboard remembers the last tab; `?tab=game`, `?tab=animations` or `?tab=sounds` opens one directly. Keyboard shortcuts only reach the game while the Game tab is showing.
 - **iPhone:** make sure the phone and computer are on the same Wi‑Fi. Find your Mac's IP with `ipconfig getifaddr en0`, then open `http://<ip>:8000` in Safari. It runs fullscreen and follows real orientation changes. For a true fullscreen experience, use Share → *Add to Home Screen*.
 - **Force a mode:** add `?mode=phone` or `?mode=desktop`.
@@ -76,6 +78,7 @@ Everything works with a mouse (Pointer Events), plus some mouse-specific behavio
 ```
 index.html      markup: device frame, screen, table, panel
 style.css       frame, felt, cards (DOM/CSS only), panel, phone fullscreen
+src/motion.js   reduced motion: the system setting, unless the devboard's Full motion is on
 src/devboard.js desktop shell: Game / Animations / Sounds tabs; the Animations phone and its effects board
 src/main.js     wiring, rAF loop, panel actions, shortcuts, route switching
 src/lobby.js    lobby carousel + dev menu UI and hash routing

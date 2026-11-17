@@ -7,6 +7,7 @@
 // On a real phone (mode-phone) there is no shell: only the game shows.
 import { detectMode } from './device.js';
 import { initFxBoard } from './fxboard.js?v=fourcolor';
+import { fullMotion, setFullMotion } from './motion.js';
 
 const TABS = ['game', 'animations', 'sounds'];
 const KEY = 'thedeck.devboard.tab';
@@ -64,6 +65,16 @@ function loadAnimationTable() {
 }
 
 for (const b of buttons) b.addEventListener('click', () => select(b.dataset.tab));
+
+// Full motion: play every animation even when the system asks for reduced
+// motion (motion.js). The embedded table follows through localStorage.
+const motionBtn = document.getElementById('db-motion');
+const showMotion = () => motionBtn?.setAttribute('aria-checked', String(fullMotion()));
+motionBtn?.addEventListener('click', () => {
+  setFullMotion(!fullMotion());
+  showMotion();
+});
+showMotion();
 
 // Keys belong to the game only while its tab is showing (the lobby, the lab
 // and the scenes all listen on window/document).
