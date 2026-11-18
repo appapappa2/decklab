@@ -321,7 +321,6 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
 
   /** One game left or right of where the carousel is heading (so quick presses add up). */
   function step(d) {
-    sfx('swipe');
     goTo(Math.round(carousel.pos.t) + d);
   }
 

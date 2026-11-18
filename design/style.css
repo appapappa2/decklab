@@ -576,6 +576,13 @@ kbd {
 .suit-mark.suit-H { color: var(--red); }
 .suit-mark.suit-C { color: var(--green); }
 .suit-mark.suit-D { color: var(--yellow); }
+/* Solitaire is played with a traditional deck: spades and clubs black, hearts
+   and diamonds red, ranks in their suit's color. The card curtain into and out
+   of Solitaire (.fly-layer.classic, transition.js) is made of the same deck,
+   and so are the cards on its cover in the lobby. */
+:is(#solitaire, .fly-layer.classic, .cv[data-game="solitaire"]) .front .suit-mark:is(.suit-S, .suit-C) { color: var(--ink-c); }
+:is(#solitaire, .fly-layer.classic, .cv[data-game="solitaire"]) .front .suit-mark:is(.suit-H, .suit-D) { color: var(--red); }
+:is(#solitaire, .fly-layer.classic, .cv[data-game="solitaire"]) .front.red { color: var(--red); }
 .back {
   transform: rotateY(180deg);
   box-shadow:
@@ -1600,7 +1607,8 @@ body.route-game .game-scene.active { display: block; }
 
 /* The … menu: every game's options, and the exit, in the top right corner. */
 .game-icon[hidden], .game-bar[hidden] { display: none; }
-.gm-more { padding: 0; }
+.gm-more { padding: 0; box-shadow: none; }
+.gm-more:active { transform: scale(.92); box-shadow: none; }
 .gm-more svg { width: 20px; height: 20px; fill: currentColor; }
 .gm-scrim {
   position: absolute;
@@ -1833,6 +1841,22 @@ body.route-game .game-scene.active { display: block; }
 .game-win-title { font-size: 28px; font-weight: 900; letter-spacing: -.035em; line-height: 1.05; }
 .game-win-stats { margin: 6px 0 18px; color: var(--fg-2); font-size: 14px; font-weight: 500; }
 .game-win-actions { display: flex; gap: 8px; justify-content: center; }
+/* A result (result.js): one centered column. Your avatar sticks out of the top
+   edge with a ring in the card's own color, then how it went, a small gray box
+   with the next rank, then play again / exit. */
+.game-win-card.result { position: relative; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; width: min(320px, calc(100% - 28px)); margin-top: 60px; padding: 76px 26px 24px; }
+.rs-avatar { position: absolute; left: 50%; top: -60px; translate: -50% 0; width: 120px; height: 120px; font-size: 34px; box-shadow: 0 0 0 7px var(--base); }
+.rs-avatar .pf-rank { right: 2px; bottom: 2px; min-width: 34px; height: 34px; font-size: 17px; }
+.game-win-card.result .game-win-title { margin-top: 0; font-size: 36px; }
+.rs-box { box-sizing: border-box; width: 100%; margin-top: 18px; padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--ink-c) 6%, var(--base)); }
+.rs-box .pf-goal { margin-top: 0; }
+.rs-box .pf-goal-label { font-size: 11px; }
+.rs-box .pf-goal-title { margin-top: 6px; font-size: 15px; }
+.rs-box .pf-bar { height: 8px; margin-top: 10px; background: color-mix(in srgb, var(--ink-c) 12%, var(--base)); }
+.rs-box .pf-goal-count { margin-top: 7px; font-size: 13px; }
+.game-win-card.result .game-win-stats { margin-bottom: 0; }
+.game-win-card.result .game-win-actions { flex-direction: column; width: 100%; margin-top: 26px; }
+.game-win-card.result .game-win-actions .game-btn { width: 100%; padding: 16px 20px; font-size: 18px; }
 
 /* -------------------------------------------------------------------- war */
 
@@ -2182,6 +2206,8 @@ body.route-game .game-scene.active { display: block; }
   transform-origin: 50% 50%;
   color: var(--card);
 }
+/* No ring around the countdown circles, just the drop shadow. */
+.sd-banner:is(.count, .go) { box-shadow: 0 5px 0 rgba(23, 20, 15, .16); }
 .sd-banner.count { font-size: 84px; font-weight: 900; }
 .sd-banner.count.n3 { background: var(--red); }
 .sd-banner.count.n2 { background: var(--yellow); color: var(--ink-c); }
@@ -2193,7 +2219,8 @@ body.route-game .game-scene.active { display: block; }
 #stress { --hud-b: 150px; }
 #stress .st-mine .deck-count { top: auto; bottom: 100%; margin: 0 0 calc(7px / var(--ps, 1)); }
 #stress .hud-pill.hud-mine { background: var(--chip); box-shadow: none; color: var(--fg); font-size: 15px; }
-#stress .hud-opps .rm-sub { color: var(--fg); font-size: 15px; }
+/* The CPU's money is the same pill as yours. */
+#screen #stress .hud-opps .rm-sub { grid-row: 1 / span 2; align-self: center; padding: 7px 12px; border-radius: 17px; background: var(--chip); color: var(--fg); font: 700 15px/1.2 var(--font); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 /* The setup card: just the three difficulties, stacked. Picking one starts the game. */
 .st-levels { display: flex; flex-direction: column; gap: 10px; min-width: 210px; margin-top: 18px; }
 .st-levels .game-btn { padding: 15px 20px; font-size: 18px; }

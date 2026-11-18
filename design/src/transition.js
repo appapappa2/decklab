@@ -5,10 +5,9 @@
 // (where together they cover the whole screen), then let go gently and drop
 // fast. While they hang, the lobby is swapped for the table behind them (or
 // the other way round when leaving). The cards are random faces from the deck,
-// so it is the same for every game and needs nothing from them.
+// the same for every game, except that Solitaire's are in its black-and-red deck.
 import { createDeck, faceHTML } from './cards.js?v=fourcolor';
 import { reducedMotion } from './motion.js';
-import { sfx } from './sfx.js';
 
 const UP_MS = 480; // ms from launch until the card has all but stopped at the top
 const HANG_MS = 150; // ms it floats there, barely moving
@@ -28,7 +27,6 @@ const reduced = reducedMotion; // the system setting, unless the devboard overri
 export function playTransition({ screen, lobbyEl, sceneEl, dir }) {
   const W = screen.offsetWidth;
   const H = screen.offsetHeight;
-  sfx('curtain');
   document.body.classList.add('zooming');
   if (dir === 'out') sceneEl.classList.add('zoom-out'); // keep the table on screen until it is covered
   const lobbyView = lobbyEl.firstElementChild ?? lobbyEl;
@@ -46,7 +44,7 @@ export function playTransition({ screen, lobbyEl, sceneEl, dir }) {
 
   // The curtain: a grid of cards, each a little bigger than its cell so they overlap.
   const layer = document.createElement('div');
-  layer.className = 'fly-layer';
+  layer.className = sceneEl.id === 'solitaire' ? 'fly-layer classic' : 'fly-layer'; // Solitaire's curtain is its own black-and-red deck
   const cols = W > H ? 4 : 3;
   const rows = COUNT / cols;
   const cw = Math.max(W / cols, H / rows / 1.4) * 1.3;
