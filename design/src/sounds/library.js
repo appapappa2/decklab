@@ -236,6 +236,13 @@ const MOMENTS = [
   { id: 'alert', group: 'moments', name: 'Alert', hint: 'One blip, higher than the count: last card, a jack is up', make: () => [M(mlvl(BLIP, 0.28), one('G4'))] },
   { id: 'pulse', group: 'moments', name: 'Low pulse', hint: 'One soft low drum: someone is down to a few cards', make: () => [M(mlvl(P(THUD, { fm: { eg2: 4 } }), 0.4), one('E2', 0.03))] },
   { id: 'slap', group: 'moments', name: 'Slap', hint: 'A hand on the pile: one drum, higher', make: () => [M(mlvl(THUD, 0.42), one('E3', 0.03))] },
+  {
+    id: 'stress', group: 'moments', name: 'Stress!', hint: 'A children\'s choir sings "stress!", bouncy, over a soft C major pad',
+    make: () => [
+      { synth: 'voice', word: 'stress', notes: ['C4', 'E4', 'G4'], level: 0.3, child: true, stretch: 1.6, at: 0 },
+      L(lvl(P(BRISK_PAD, { vcf: { freq: 900 } }), 0.05), [['C4', 0, 0.7], ['G4', 0, 0.7]]),
+    ],
+  },
   { id: 'war', group: 'moments', name: 'War!', hint: 'One drum falling further', make: () => [M(mlvl(P(THUD, { fm: { eg2: 12 } }), 0.5), one('A2', 0.04))] },
   { id: 'sweep', group: 'moments', name: 'Sweep', hint: 'One glass pluck (Casino)', make: () => [L(lvl(GLASS, 0.3), one('D4'))] },
   { id: 'burn', group: 'moments', name: 'Burn', hint: 'The pile goes: one low squelch (Palace)', make: () => [M(mlvl(SQUELCH, 0.34), one('E2', 0.03))] },

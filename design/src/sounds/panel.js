@@ -398,6 +398,29 @@ export function initSounds(root) {
   // ------------------------------------------------------------ sound bank
   const bank = h('section', 'snd-bank');
   wrap.append(bank);
+  // Export: every sound in the bank as a WAV, in one zip (export.js).
+  const bankHead = h('div', 'snd-bank-head');
+  const exportBtn = h('button', 'snd-tool', 'Export all (.zip)');
+  exportBtn.type = 'button';
+  exportBtn.title = 'Download every sound below as a WAV file, all in one zip';
+  exportBtn.addEventListener('click', async () => {
+    if (exportBtn.disabled) return;
+    exportBtn.disabled = true;
+    try {
+      const { exportAll } = await import('./export.js');
+      const n = await exportAll((done, total) => (exportBtn.textContent = `Exporting ${done}/${total}…`));
+      exportBtn.textContent = `Exported ${n} sounds`;
+    } catch (err) {
+      console.warn('export', err);
+      exportBtn.textContent = 'Export failed';
+    }
+    setTimeout(() => {
+      exportBtn.textContent = 'Export all (.zip)';
+      exportBtn.disabled = false;
+    }, 2500);
+  });
+  bankHead.append(exportBtn);
+  bank.append(bankHead);
   const tiles = new Map();
   for (const g of GROUPS) {
     const sec = h('div', 'snd-group');
@@ -432,7 +455,8 @@ export function initSounds(root) {
 
   /** Loads a sound's layer onto the panel; pressing Edit again steps through its layers. */
   function load(s) {
-    const layers = s.make();
+    const layers = s.make().filter((l) => l.synth !== 'voice'); // a sung word has no patch to edit
+    if (!layers.length) return;
     const i = editing?.sound === s ? (editing.layer + 1) % layers.length : 0;
     editing = { sound: s, layer: i };
     const key = layers[i].synth === 'ms20' ? 'dl20' : 'dl106';

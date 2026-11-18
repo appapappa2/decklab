@@ -147,6 +147,8 @@
 
 /* ------------------------------------------------------------ sound bank */
 .snd-bank { display: grid; gap: 22px; }
+.snd-bank-head { display: flex; justify-content: flex-end; }
+.snd-tool:disabled { opacity: .6; cursor: progress; }
 .snd-group-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .snd-group-head h2 { margin: 0; font-size: 16px; font-weight: 700; }
 .snd-group-head span { color: var(--muted); font-size: 12px; }
