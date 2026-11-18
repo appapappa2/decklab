@@ -56,6 +56,17 @@ function dress(win) {
   }
 }
 
+/**
+ * A finished game doesn't wait for you: if this table was left with its result
+ * showing, coming back starts over (the same thing "Play again" does), so the
+ * popup is only ever seen right after a game is won or lost.
+ */
+export function clearResult(sceneEl) {
+  const card = sceneEl?.querySelector('.game-win.show > .game-win-card.result');
+  const again = card && [...card.querySelectorAll('.game-win-actions button')].find((b) => /again|new game/i.test(b.textContent));
+  again?.click();
+}
+
 export function initResults(screen) {
   new MutationObserver((muts) => {
     for (const m of muts) {
