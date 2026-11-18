@@ -54,6 +54,7 @@ export const DEFAULT_PATCH = {
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 import { playMs20 } from './ms20.js';
+import { sing } from './voice.js';
 
 export const midiHz = (n) => 440 * 2 ** ((n - 69) / 12);
 const NAMES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -81,36 +82,51 @@ export function makePatch(over = {}, base = DEFAULT_PATCH) {
 let ctx = null;
 let master = null;
 let analyser = null;
-const shared = {};
-const halls = new Map(); // decay seconds -> the input of a shared reverb
+let shared = {};
+let halls = new Map(); // decay seconds -> the input of a shared reverb
 
 /** The audio graph is made on first use (browsers only allow it after a gesture). */
 export function audio() {
-  if (!ctx) {
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    master = ctx.createGain();
-    master.gain.value = 0.8;
-    const comp = ctx.createDynamicsCompressor();
-    // Chords and layered sounds add up: this holds the peaks down.
-    comp.threshold.value = -16;
-    comp.knee.value = 8;
-    comp.ratio.value = 12;
-    comp.attack.value = 0.002;
-    comp.release.value = 0.12;
-    analyser = ctx.createAnalyser();
-    analyser.fftSize = 2048;
-    master.connect(comp).connect(analyser).connect(ctx.destination);
-    // White noise, two seconds, looped.
-    const len = ctx.sampleRate * 2;
-    shared.noise = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = shared.noise.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    // Pulse from saw: a hard step at 0. The pulse width is a DC offset added before it.
-    shared.step = new Float32Array(2048);
-    for (let i = 0; i < 2048; i++) shared.step[i] = i < 1024 ? -1 : 1;
-  }
-  if (ctx.state === 'suspended') ctx.resume();
+  if (!ctx) ({ ctx, master, analyser, shared, halls } = engineOn(new (window.AudioContext || window.webkitAudioContext)()));
+  if (ctx.state === 'suspended' && !(ctx instanceof OfflineAudioContext)) ctx.resume();
   return ctx;
+}
+
+/** The master bus (compressor, analyser) and the shared buffers, built on context `ctx`. */
+export function engineOn(ctx) {
+  const shared = {};
+  const master = ctx.createGain();
+  master.gain.value = 0.8;
+  const comp = ctx.createDynamicsCompressor();
+  // Chords and layered sounds add up: this holds the peaks down.
+  comp.threshold.value = -16;
+  comp.knee.value = 8;
+  comp.ratio.value = 12;
+  comp.attack.value = 0.002;
+  comp.release.value = 0.12;
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  master.connect(comp).connect(analyser).connect(ctx.destination);
+  // White noise, two seconds, looped.
+  const len = ctx.sampleRate * 2;
+  shared.noise = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = shared.noise.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  // Pulse from saw: a hard step at 0. The pulse width is a DC offset added before it.
+  shared.step = new Float32Array(2048);
+  for (let i = 0; i < 2048; i++) shared.step[i] = i < 1024 ? -1 : 1;
+  return { ctx, master, analyser, shared, halls: new Map() };
+}
+
+/**
+ * Makes `next` (from engineOn) the engine every instrument plays on, and returns
+ * the one it replaces. Only for rendering offline (export.js): swap in, start
+ * the sound, swap straight back, all without awaiting in between.
+ */
+export function swapEngine(next) {
+  const prev = { ctx, master, analyser, shared, halls };
+  ({ ctx, master, analyser, shared, halls } = next);
+  return prev;
 }
 export const getAnalyser = () => (audio(), analyser);
 /** Where every instrument ends up: the master bus (the DL-20 in ms20.js plugs in here too). */
@@ -621,11 +637,16 @@ export function play(patch, notes, { at = 0 } = {}) {
   return end - s.c.currentTime + (s.p.reverb.mix > 0 ? s.hallSecs * 0.6 : 0);
 }
 
-/** A sound: one or more layers, each its own synth, on the DL-106 or the DL-20 (library.js makes them fresh on every play). */
+/** A sound: one or more layers, each its own synth, on the DL-106 or the DL-20 (or a sung word, voice.js) (library.js makes them fresh on every play). */
 export function playSound(sound) {
   let longest = 0;
   const layers = sound.make ? sound.make() : sound.layers;
   for (const layer of layers) {
+    if (layer.synth === 'voice') {
+      // A sung word (voice.js): `word` over the chord in `notes`.
+      longest = Math.max(longest, sing(layer.word, layer.notes, { at: layer.at || 0, level: layer.level, child: layer.child, stretch: layer.stretch }));
+      continue;
+    }
     const run = layer.synth === 'ms20' ? playMs20 : play; // which instrument the layer is written for
     longest = Math.max(longest, run(layer.patch, layer.notes, { at: layer.at || 0 }));
   }

@@ -59,6 +59,18 @@ export function ms20Engine() {
   return ready;
 }
 
+/** For rendering offline (export.js): a DL-20 engine on context `c`, not yet connected. */
+export async function ms20NodeOn(c) {
+  await c.audioWorklet.addModule(new URL('./ms20-worklet.js', import.meta.url));
+  return new AudioWorkletNode(c, 'ms20', { numberOfInputs: 0, numberOfOutputs: 2, outputChannelCount: [2, 1] });
+}
+/** Makes `n` the DL-20 engine every sound plays on; returns the one it replaces (see swapEngine in synth.js). */
+export function swapMs20(n) {
+  const prev = node;
+  node = n;
+  return prev;
+}
+
 /**
  * Plays a line: notes are [note, start s, length s, velocity?].
  * Returns the time (s) it will take, release included.
