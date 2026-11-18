@@ -81,7 +81,7 @@ export function installUiSounds(screen) {
   screen.addEventListener(
     'click',
     (e) => {
-      if (!(e.target instanceof Element)) return;
+      if (!e.isTrusted || !(e.target instanceof Element)) return; // only real taps make a sound, not clicks made in code
       for (const [sel, id] of RULES) {
         const hit = e.target.closest(sel);
         if (!hit || !screen.contains(hit)) continue;

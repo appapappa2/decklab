@@ -12,7 +12,7 @@ import { setScreenColor, setTheme } from './theme.js';
 import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
 import { installGameMenu } from './gamemenu.js?v=fourcolor';
 import { initHud } from './hud.js?v=fourcolor';
-import { initResults } from './result.js?v=fourcolor';
+import { initResults, clearResult } from './result.js?v=fourcolor';
 import { initFx } from './fx.js?v=fourcolor';
 import { loadPresets } from './fx-presets.js?v=fourcolor';
 import { playIntro } from './intro.js?v=fourcolor';
@@ -232,11 +232,13 @@ const lobbyNav = initLobby($('lobby'), {
     inLab = lab;
     input.cancel();
     input.clearHover();
+    const current0 = current;
     if (current && current !== game) current.hide();
     current = game;
     // A game keeps its lobby colors (matters when it is opened straight from a link).
     const entry = game && GAMES.find((g) => g.id === route.id);
     if (entry) setScreenColor(entry.color, entry.pop);
+    if (game && game !== current0) clearResult($(route.id)); // a result left on the table is not shown again
     game?.setMode?.(route.mode);
     game?.show();
     for (const v of ['lab', 'game', 'lobby']) document.body.classList.toggle(`route-${v}`, view === v);
