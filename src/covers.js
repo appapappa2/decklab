@@ -88,7 +88,7 @@ export function coverHTML(game, index) {
   // The longest word decides the type size, so every name stays inside its sticker.
   const longest = Math.max(...game.name.split(/[\s-]+/).map((w) => w.length));
   return (
-    `<div class="cv" data-c="${game.color}" data-p="${game.pop}">` +
+    `<div class="cv" data-game="${game.id}" data-c="${game.color}" data-p="${game.pop}">` +
     `<div class="cv-suit">${suitHTML(L.suit)}</div>` +
     cards +
     chips +

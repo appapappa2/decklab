@@ -12,6 +12,9 @@ const FACES = ['S', 'H', 'C', 'D']; // the four suits you can pick; until you pi
 
 // Made up, until games report their results.
 const MOCK = { rank: 1, won: 3 };
+/** The same numbers, for the end-of-game popup (result.js). */
+export const RANK = MOCK;
+export { faceHTML as avatarHTML, loadAvatar };
 
 const h = (tag, cls, html) => {
   const el = document.createElement(tag);

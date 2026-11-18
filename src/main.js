@@ -12,6 +12,7 @@ import { setScreenColor, setTheme } from './theme.js';
 import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
 import { installGameMenu } from './gamemenu.js?v=fourcolor';
 import { initHud } from './hud.js?v=fourcolor';
+import { initResults } from './result.js?v=fourcolor';
 import { initFx } from './fx.js?v=fourcolor';
 import { loadPresets } from './fx-presets.js?v=fourcolor';
 import { playIntro } from './intro.js?v=fourcolor';
@@ -185,6 +186,7 @@ installUiSounds(screenEl);
 window.lab.sfx = sfx;
 // Avatars, the opponents' corner and the pills by your hand (hud.js).
 initHud(screenEl);
+initResults(screenEl); // the end-of-game popup: every game's result card, dressed like the profile sheet
 
 // Lobby / routing. The lab stays loaded underneath; it is only shown (and
 // updated) on its route. Games are created the first time they're opened.

@@ -54,7 +54,7 @@ export const DEFAULTS = [
   { id: 'score', name: 'Score +3', group: 'game', layers: [L('score')] },
   { id: 'turn', name: 'Your turn', group: 'game', layers: [L('glow')] },
   { id: 'confetti', name: 'Confetti', group: 'game', layers: [L('confetti')] },
-  { id: 'curtain', name: 'Card curtain', group: 'game', layers: [L('curtain')] },
+  { id: 'curtain', name: 'Card curtain', group: 'game', sound: false, layers: [L('curtain')] },
   {
     id: 'countdown',
     name: 'Countdown',

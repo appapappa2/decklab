@@ -586,11 +586,11 @@ export class SpeedScene {
       const row = h('div', 'game-win-actions');
       const again = h('button', 'game-btn accent', 'Play again');
       again.type = 'button';
-      again.addEventListener('click', () => this.begin());
-      const change = h('button', 'game-btn', 'Change level');
-      change.type = 'button';
-      change.addEventListener('click', () => this.showSetup());
-      row.append(again, change);
+      again.addEventListener('click', () => this.showSetup()); // the setup card asks for the level before every game
+      const exit = h('button', 'game-btn', 'Exit');
+      exit.type = 'button';
+      exit.addEventListener('click', () => this.onExit());
+      row.append(again, exit);
       c.append(row);
       this.overEl.classList.add('show');
     }, 900);
