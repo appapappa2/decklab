@@ -9,6 +9,7 @@
 // to take. It is shown next to each avatar.
 import { SpeedScene, LEVELS, SIDE_SCALE } from '../speed/scene.js?v=fourcolor';
 import { Stress } from './rules.js';
+import { sfx } from '../sfx.js';
 
 const STRESS = {
   title: 'Stress',
@@ -186,6 +187,7 @@ export class StressScene extends SpeedScene {
     this.callBtn.classList.remove('show');
     const n = res.taken.length;
     this.money[p] += n;
+    sfx('stress'); // a low choir says the word, whoever called it
     if (p === 0) {
       this.banner(`Stress! CPU takes ${n}`, 'go', 1100);
       t.haptic([12, 30, 12]);
