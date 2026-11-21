@@ -491,6 +491,11 @@ export class SlapjackScene {
     top.classList.toggle('slap', r.jackUp);
   }
 
+  /** Did this seat win the match? */
+  seatWon(seat) {
+    return this.rules?.winner === seat;
+  }
+
   showOver() {
     if (this.overShown) return;
     this.overShown = true;

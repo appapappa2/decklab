@@ -13,6 +13,7 @@ import { playTransition, DEAL_AT } from './transition.js?v=fourcolor';
 import { installGameMenu } from './gamemenu.js?v=fourcolor';
 import { initHud } from './hud.js?v=fourcolor';
 import { initResults, clearResult } from './result.js?v=fourcolor';
+import { takeChallenge } from './challenges.js?v=fourcolor';
 import { initFx } from './fx.js?v=fourcolor';
 import { loadPresets } from './fx-presets.js?v=fourcolor';
 import { playIntro } from './intro.js?v=fourcolor';
@@ -238,7 +239,13 @@ const lobbyNav = initLobby($('lobby'), {
     // A game keeps its lobby colors (matters when it is opened straight from a link).
     const entry = game && GAMES.find((g) => g.id === route.id);
     if (entry) setScreenColor(entry.color, entry.pop);
-    if (game && game !== current0) clearResult($(route.id)); // a result left on the table is not shown again
+    if (game && game !== current0) {
+      clearResult($(route.id)); // a result left on the table is not shown again
+      // A challenge picked in the lobby is handed to the table; a normal visit takes the table back to normal.
+      const ch = takeChallenge(route.id);
+      game.setChallenge?.(ch);
+      tagChallenge($(route.id), ch);
+    }
     game?.setMode?.(route.mode);
     game?.show();
     for (const v of ['lab', 'game', 'lobby']) document.body.classList.toggle(`route-${v}`, view === v);
@@ -255,6 +262,19 @@ const lobbyNav = initLobby($('lobby'), {
     }
   },
 });
+
+/** The name of the challenge being played sits in the table's top bar, left of the … button. */
+function tagChallenge(sceneEl, ch) {
+  sceneEl.querySelector('.ch-tag')?.remove();
+  if (!ch) return;
+  const tag = document.createElement('div');
+  tag.className = 'ch-tag';
+  tag.textContent = ch.name;
+  tag.title = ch.rules.join(' · ');
+  const more = sceneEl.querySelector('.gm-more');
+  if (more) more.before(tag);
+  else sceneEl.querySelector('.game-top')?.append(tag);
+}
 
 /** The card transition between the lobby and a game (transition.js). */
 let zoomEnd = null;

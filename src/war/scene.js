@@ -41,6 +41,7 @@ export class WarScene {
     this.autoAt = 0; // next auto action
     this.lockUntil = 0; // debounce taps
     this.overShown = false;
+    this.ch = null; // the challenge being played (challenges.js), or null
 
     this.buildDOM(onExit);
     const saved = this.load();
@@ -331,13 +332,21 @@ export class WarScene {
     this.updateHUD();
   }
 
-  newGame() {
+  /** Starts (or ends, with null) a challenge. A challenge game is never saved, so the normal one is still there afterwards. */
+  setChallenge(ch) {
+    if (!ch && !this.ch) return;
+    this.ch = ch;
+    const saved = ch ? null : this.load();
+    this.newGame(saved ?? undefined);
+  }
+
+  newGame(game = new War(undefined, this.ch?.mods)) {
     this.collectAt = 0;
     this.auto = false;
     this.overShown = false;
     this.overEl.classList.remove('show');
     this.banner('', null, 0);
-    this.game = new War();
+    this.game = game;
     this.syncCards();
     this.dealAnimation(320);
     this.save();
@@ -348,7 +357,8 @@ export class WarScene {
   dealAnimation(gather) {
     const now = performance.now();
     const order = [];
-    for (let i = 0; i < 26; i++) for (const p of PLAYERS) order.push(this.game.decks[p][25 - i]);
+    const { you, cpu } = this.game.decks; // not always 26 each: a challenge can deal unevenly, a restored game is mid-way
+    for (let i = 0; i < Math.max(you.length, cpu.length); i++) for (const d of [you, cpu]) if (d[d.length - 1 - i]) order.push(d[d.length - 1 - i]);
     order.forEach((c, i) => {
       const sp = this.sprites.get(c.id);
       sp.holdAt = null;
@@ -363,7 +373,7 @@ export class WarScene {
       const n = g.decks[p].length;
       this.labels[p].lastChild.textContent = `${n} ${n === 1 ? 'card' : 'cards'}`;
     }
-    this.statsEl.textContent = g.rounds ? `Round ${g.rounds}${g.wars ? ` · ${g.wars} ${g.wars === 1 ? 'war' : 'wars'}` : ''}` : '';
+    this.statsEl.textContent = g.rounds ? `Round ${g.rounds}${g.maxRounds ? `/${g.maxRounds}` : ''}${g.wars ? ` · ${g.wars} ${g.wars === 1 ? 'war' : 'wars'}` : ''}` : '';
     this.autoBtn.textContent = this.auto ? 'Stop' : 'Auto-play';
     this.autoBtn.classList.toggle('accent', this.auto);
     this.autoBtn.disabled = !!g.winner;
@@ -447,6 +457,7 @@ export class WarScene {
   // ----------------------------------------------------------- persistence
 
   save() {
+    if (this.ch) return; // a challenge game is not the saved game
     try {
       const data = this.game.serialize();
       if (data) localStorage.setItem(SAVE_KEY, JSON.stringify(data));

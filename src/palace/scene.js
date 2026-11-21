@@ -763,6 +763,11 @@ export class PalaceScene {
     this.toastTimer = setTimeout(() => this.toastEl.classList.remove('show'), 1800);
   }
 
+  /** Did this seat win the match? (First one out.) */
+  seatWon(seat) {
+    return this.rules?.finished?.[0] === seat;
+  }
+
   showBoard() {
     const r = this.rules;
     const names = this.names();

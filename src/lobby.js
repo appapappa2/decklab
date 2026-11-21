@@ -9,6 +9,7 @@ import { SUIT_ART } from './cards.js?v=fourcolor';
 import { Spring } from './spring.js';
 import { THEMES, getTheme, setTheme, cycleTheme, setScreenColor } from './theme.js';
 import { createProfile } from './profile.js?v=fourcolor';
+import { createChallenges } from './challenges.js?v=fourcolor';
 import { sfx, soundOn, setSoundOn } from './sfx.js';
 
 const INDEX_KEY = 'thedeck.lobby.game';
@@ -230,10 +231,14 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     });
     const sheet = renderSettings();
     c.ui.sheet = sheet;
+    // Under the Play bar: the selected game's Challenges button, and the list it opens (challenges.js).
+    const challenges = createChallenges({ haptic });
+    c.ui.challenges = challenges;
 
     // Between the blocks sit flexible gaps (the dot strip is one of them), so
     // the air above the name, around the card and under it stays in proportion.
-    view.append(backdrop, top, dots, stage, h('div', 'gs-gap'), info, you, gear, sheet, profile.sheet);
+    view.append(backdrop, top, dots, stage, h('div', 'gs-gap'), info, you, gear, sheet, profile.sheet, challenges.sheet);
+    info.append(challenges.button);
 
     // Start on the game picked last time.
     const savedId = localStorage.getItem(INDEX_KEY);
@@ -309,7 +314,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     if (sheet && sheet.classList.contains('show') !== !!open) sfx(open ? 'sheet-open' : 'sheet-close');
     sheet?.classList.toggle('show', open);
   }
-  const settingsOpen = () => !!carousel.ui?.sheet?.classList.contains('show') || !!carousel.ui?.profile?.isOpen();
+  const settingsOpen = () => !!carousel.ui?.sheet?.classList.contains('show') || !!carousel.ui?.profile?.isOpen() || !!carousel.ui?.challenges?.isOpen();
 
   function goTo(i) {
     const c = carousel;
@@ -398,6 +403,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
   function updateMode(g) {
     const c = carousel;
     const { sub, toggle, play, playbar } = c.ui;
+    c.ui.challenges?.setGame(g);
     const ready = isReady(g);
     const mode = modeOf(g);
     const el = c.items[c.games.indexOf(g)];
@@ -418,7 +424,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
     const spacing = () => stage.clientWidth * 0.62;
     area.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (e.target instanceof Element && e.target.closest('.gs-toggle, .gs-dots, .gs-gear, .gs-you, .gs-sheet-wrap')) return;
+      if (e.target instanceof Element && e.target.closest('.gs-toggle, .gs-dots, .gs-gear, .gs-you, .gs-ch, .gs-sheet-wrap')) return;
       c.drag = { id: e.pointerId, x: e.clientX, start: c.pos.v, moved: false, samples: [[performance.now(), e.clientX]] };
     });
     area.addEventListener('pointermove', (e) => {
@@ -541,6 +547,7 @@ export function initLobby(root, { onRoute, haptic = () => {}, settings = null, s
       if (e.key === 'Escape') {
         toggleSettings(false);
         carousel.ui?.profile?.open(false);
+        carousel.ui?.challenges?.open(false);
       }
       return;
     }

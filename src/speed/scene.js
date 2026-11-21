@@ -63,6 +63,7 @@ export class SpeedScene {
     this.root = root;
     this.onExit = onExit;
     this.game = game;
+    this.ch = null; // the challenge being played (challenges.js), or null
     this.rules = null;
     this.level = LEVELS[localStorage.getItem(game.saveLevel)] ? localStorage.getItem(game.saveLevel) : 'normal';
     this.byId = new Map();
@@ -188,7 +189,21 @@ export class SpeedScene {
 
   setMode() {}
 
+  /** Starts (or ends, with null) a challenge: it sets the CPU's level. The table goes back to its start. */
+  setChallenge(ch) {
+    if (!ch && !this.ch) return;
+    this.ch = ch;
+    this.overEl.classList.remove('show');
+    if (!ch) this.level = LEVELS[localStorage.getItem(this.game.saveLevel)] ? localStorage.getItem(this.game.saveLevel) : 'normal';
+    this.phase = 'setup';
+  }
+
   showSetup() {
+    // A challenge sets the level: no question, straight to the deal.
+    if (this.ch) {
+      this.level = this.ch.mods.level ?? 'normal';
+      return this.begin();
+    }
     this.phase = 'setup';
     const c = this.overCard;
     c.innerHTML = '';
@@ -565,12 +580,21 @@ export class SpeedScene {
     this.statusEl.textContent = this.phase === 'play' ? this.statusText(r) : '';
   }
 
+  /** Did you win? (Stress adds its challenges' conditions.) */
+  didWin(r) {
+    return r.winner === 0;
+  }
+
+  resultTitle(won) {
+    return won ? 'You won!' : 'CPU wins';
+  }
+
   finish() {
     if (this.phase === 'over') return;
     this.phase = 'over';
     this.input.cancel();
     const r = this.rules;
-    const won = r.winner === 0;
+    const won = this.didWin(r);
     const time = this.elapsed;
     const key = `${this.game.bestKey}.${this.level}`;
     const best = Number(localStorage.getItem(key)) || 0;
@@ -581,7 +605,7 @@ export class SpeedScene {
     setTimeout(() => {
       const c = this.overCard;
       c.innerHTML = '';
-      c.append(h('div', 'game-win-title', won ? 'You won!' : 'CPU wins'));
+      c.append(h('div', 'game-win-title', this.resultTitle(won, r)));
       c.append(h('div', 'game-win-stats', this.resultLines(won, time, record).join(' · ')));
       const row = h('div', 'game-win-actions');
       const again = h('button', 'game-btn accent', 'Play again');

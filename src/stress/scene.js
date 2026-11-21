@@ -31,6 +31,8 @@ export class StressScene extends SpeedScene {
     this.callAt = 0; // when the CPU will call the match it has seen
     this.holdUntil = 0; // no flip before this, so the call's banner can be read
     this.money = [0, 0]; // you, CPU
+    this.ch = null; // the challenge being played (challenges.js), or null
+    this.struck = false; // "One Strike": you lost a call
     addEventListener('keydown', (e) => {
       if (e.code !== 'Space' || !this.root.classList.contains('active') || !this.callBtn.classList.contains('show')) return;
       e.preventDefault();
@@ -73,6 +75,11 @@ export class StressScene extends SpeedScene {
 
   /** The setup card is only the question: three difficulties, stacked. Picking one starts the game. */
   showSetup() {
+    // A challenge sets the difficulty: no question, straight to the deal.
+    if (this.ch) {
+      this.level = this.ch.mods.level ?? 'normal';
+      return this.begin();
+    }
     this.phase = 'setup';
     const c = this.overCard;
     c.innerHTML = '';
@@ -103,7 +110,34 @@ export class StressScene extends SpeedScene {
     this.callAt = 0;
     this.holdUntil = 0;
     this.money = [0, 0];
+    this.struck = false;
     super.begin();
+  }
+
+  /**
+   * Starts (or ends, with null) a challenge: the CPU's level, money you must
+   * have made by the end, or one lost call ending the game. The table goes
+   * back to its start, and showing it deals (a challenge) or asks for the
+   * difficulty (a normal game).
+   */
+  setChallenge(ch) {
+    if (!ch && !this.ch) return;
+    this.ch = ch;
+    this.struck = false;
+    this.dropFlying();
+    this.callBtn.classList.remove('show');
+    this.overEl.classList.remove('show');
+    if (!ch) this.level = LEVELS[localStorage.getItem(this.game.saveLevel)] ? localStorage.getItem(this.game.saveLevel) : 'normal';
+    this.phase = 'setup';
+  }
+
+  didWin(r) {
+    const need = this.ch?.mods.minMoney;
+    return r.winner === 0 && !this.struck && (!need || this.money[0] >= need);
+  }
+
+  resultTitle(won, r) {
+    return won ? 'You won!' : this.struck || r.winner === 0 ? 'You lost' : 'CPU wins';
   }
 
   /** A card flipped onto the middle comes from the pile of the player who flipped it. */
@@ -162,6 +196,11 @@ export class StressScene extends SpeedScene {
     }
     this.cpuAt = now + this.cpuDelay();
     this.sync();
+    // One Strike: the CPU got a call in, so that's the game.
+    if (p === 1 && this.ch?.mods.oneStrike) {
+      this.struck = true;
+      setTimeout(() => this.struck && this.phase === 'play' && this.finish(), 1000);
+    }
   }
 
   /** A card on the middle is a dollar. */
@@ -174,7 +213,8 @@ export class StressScene extends SpeedScene {
     super.updateHUD();
     if (!this.rules) return;
     this.cpuLabel.innerHTML = `<div class="rm-name">CPU</div><div class="rm-sub">$${this.money[1]}</div>`;
-    this.youLabel.innerHTML = `<div class="rm-name">You</div><div class="rm-sub">$${this.money[0]}</div>`;
+    const need = this.ch?.mods.minMoney;
+    this.youLabel.innerHTML = `<div class="rm-name">You</div><div class="rm-sub">$${this.money[0]}${need ? ` / $${need}` : ''}</div>`;
   }
 
   clockText() {
@@ -182,7 +222,11 @@ export class StressScene extends SpeedScene {
   }
 
   resultLines() {
-    return [`You $${this.money[0]} · CPU $${this.money[1]}`, this.levelName()];
+    const lines = [`You $${this.money[0]} · CPU $${this.money[1]}`, this.levelName()];
+    const need = this.ch?.mods.minMoney;
+    if (this.struck) lines.unshift('The CPU won a Stress call');
+    else if (need && this.rules.winner === 0 && this.money[0] < need) lines.unshift(`Out first, but you needed $${need}`);
+    return lines;
   }
 
   stepOthers(now, dt) {

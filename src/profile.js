@@ -2,16 +2,20 @@
 // badge on its corner) and the sheet it opens, with your rank, the objective
 // that leads to the next one, and a way to change the avatar.
 //
-// This is a mockup. The rank and the progress are made-up numbers, nothing is
-// counted yet; only the avatar you pick (or upload) is real, and it is
-// remembered on this device.
+// The rank is real (rank.js): each rank has one objective, built from the games
+// you have won and the challenges you have completed. The avatar you pick (or upload) is remembered on this device.
 import { suitHTML } from './cards.js?v=fourcolor';
+import { rankState, rankGoalHTML } from './rank.js?v=fourcolor';
 
 const AVATAR_KEY = 'thedeck.avatar';
 const FACES = ['S', 'H', 'C', 'D']; // the four suits you can pick; until you pick one (or upload a picture) the avatar says "You"
 
-// Made up, until games report their results.
-const MOCK = { rank: 1, won: 3 };
+// The rank comes from rank.js: one objective per rank, met in order.
+const MOCK = {
+  get rank() {
+    return rankState().rank;
+  },
+};
 /** The same numbers, for the end-of-game popup (result.js). */
 export const RANK = MOCK;
 export { faceHTML as avatarHTML, loadAvatar };
@@ -94,18 +98,23 @@ export function createProfile({ total, haptic = () => {} }) {
   picker.append(upload, file);
 
   const goal = h('div', 'pf-goal');
-  const pct = Math.round((MOCK.won / total) * 100);
-  goal.innerHTML =
-    `<div class="pf-goal-label">Next: rank ${MOCK.rank + 1}</div>` +
-    `<div class="pf-goal-title">Win every game once</div>` +
-    `<div class="pf-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${MOCK.won}"><i style="width:${pct}%"></i></div>` +
-    `<div class="pf-goal-count">${MOCK.won} of ${total}</div>`;
+  const title = h('div', 'pf-title');
+  /** The rank and the way to the next one: repainted whenever a game is won for the first time. */
+  const paintRank = () => {
+  button.setAttribute('aria-label', `Your profile, rank ${MOCK.rank}`);
+  for (const el of [button, big]) el.querySelector('.pf-rank').textContent = String(MOCK.rank);
+  title.textContent = `Rank ${MOCK.rank}`;
+  goal.innerHTML = rankGoalHTML();
+  };
+  paintRank();
+  window.addEventListener('progresschange', paintRank);
+  window.addEventListener('challengechange', paintRank);
 
   const done = h('button', 'game-btn accent pf-done', 'Close');
   done.type = 'button';
   done.addEventListener('click', () => open(false));
 
-  card.append(big, h('div', 'pf-title', `Rank ${MOCK.rank}`), picker, goal, done);
+  card.append(big, title, picker, goal, done);
   wrap.append(card);
   wrap.addEventListener('click', (e) => {
     if (e.target === wrap) open(false);

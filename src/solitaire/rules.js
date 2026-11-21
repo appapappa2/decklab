@@ -16,6 +16,7 @@ const isRed = (card) => card.suit.red;
 export class Klondike {
   constructor(drawCount = 1) {
     this.drawCount = drawCount === 3 ? 3 : 1;
+    this.maxPasses = Infinity; // times through the stock (a challenge can limit it)
     this.deal();
   }
 
@@ -34,6 +35,7 @@ export class Klondike {
     this.piles.stock = cards; // the rest, face down
     this.history = [];
     this.moves = 0;
+    this.passes = 0;
     this.dealOrder = TABLEAU.flatMap((_, row) => TABLEAU.slice(row).map((k) => this.piles[k][row]));
   }
 
@@ -137,8 +139,10 @@ export class Klondike {
   draw() {
     const { stock, waste } = this.piles;
     if (!stock.length && !waste.length) return null;
+    if (!stock.length && this.passes + 1 >= this.maxPasses) return null; // no more times through
     this.snapshot();
     if (!stock.length) {
+      this.passes++;
       while (waste.length) {
         const c = waste.pop();
         c.up = false;
@@ -159,6 +163,7 @@ export class Klondike {
   snapshot() {
     this.history.push({
       moves: this.moves,
+      passes: this.passes,
       piles: PILES.map((k) => this.piles[k].map((c) => [c, c.up])),
     });
     if (this.history.length > UNDO_LIMIT) this.history.shift();
@@ -168,6 +173,7 @@ export class Klondike {
     const s = this.history.pop();
     if (!s) return false;
     this.moves = s.moves;
+    this.passes = s.passes ?? this.passes;
     PILES.forEach((k, i) => {
       this.piles[k] = s.piles[i].map(([c, up]) => {
         c.up = up;
