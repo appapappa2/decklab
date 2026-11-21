@@ -14,9 +14,18 @@ const other = (p) => (p === 'you' ? 'cpu' : 'you');
 const power = (card) => (card.value === 1 ? 14 : card.value); // aces high
 
 export class War {
-  constructor(deck = shuffle(createDeck())) {
+  /**
+   * `opts` are a challenge's twists (challenges.js): `youCards` deals you that
+   * many cards and the CPU the rest, `maxRounds` ends the game after that many
+   * rounds (more cards wins), `suddenDeath` lets the first war decide the game.
+   */
+  constructor(deck = shuffle(createDeck()), opts = {}) {
     this.decks = { you: [], cpu: [] };
-    deck.forEach((c, i) => this.decks[PLAYERS[i % 2]].push({ ...c, up: false }));
+    this.maxRounds = opts.maxRounds || 0;
+    this.suddenDeath = !!opts.suddenDeath;
+    this.fought = false; // the table on its way to being collected was a war
+    const mine = opts.youCards;
+    deck.forEach((c, i) => this.decks[mine ? (i < mine ? 'you' : 'cpu') : PLAYERS[i % 2]].push({ ...c, up: false }));
     this.table = { you: [], cpu: [] }; // bottom -> top; the last face-up card is the one in play
     this.atWar = false; // the next play() is a war placement
     this.rounds = 0;
@@ -75,6 +84,7 @@ export class War {
       return (this.result = { type: 'over', winner: other(broke) });
     }
     this.atWar = true;
+    this.fought = true;
     this.wars++;
     return (this.result = { type: 'war' });
   }
@@ -89,6 +99,11 @@ export class War {
     this.table = { you: [], cpu: [] };
     this.result = null;
     if (r.type === 'over' || !this.decks[other(r.winner)].length) this.winner = r.winner;
+    else if (this.suddenDeath && this.fought) this.winner = r.winner;
+    else if (this.maxRounds && this.rounds >= this.maxRounds && this.decks.you.length !== this.decks.cpu.length) {
+      this.winner = this.decks.you.length > this.decks.cpu.length ? 'you' : 'cpu';
+    }
+    this.fought = false;
     return won;
   }
 

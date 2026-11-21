@@ -40,6 +40,8 @@ export class SolitaireScene {
     this.elapsed = 0; // ms played, paused while hidden
     this.started = false;
     this.wonShown = false;
+    this.ch = null; // the challenge being played (challenges.js), or null
+    this.failed = false; // a challenge's limit was hit
 
     this.buildDOM(onExit);
 
@@ -221,7 +223,9 @@ export class SolitaireScene {
 
   update(now, dt) {
     if (!this.m) return;
-    if (this.started && !this.game.won && now >= (this.heldUntil ?? 0)) this.elapsed += dt * 1000;
+    if (this.started && !this.game.won && !this.failed && now >= (this.heldUntil ?? 0)) this.elapsed += dt * 1000;
+    const limit = this.ch?.mods.timeLimit;
+    if (limit && !this.game.won && this.elapsed >= limit * 1000) this.fail(`Time's up: ${fmtTime(limit * 1000)}`);
 
     if (this.finishing && now >= this.finishing) {
       const mv = this.game.nextFinishMove();
@@ -466,10 +470,48 @@ export class SolitaireScene {
 
   // ---------------------------------------------------------------- actions
 
+  /**
+   * Starts (or ends, with null) a challenge: draw count, times through the
+   * stock, undo, a move limit, a time limit. A challenge game is never saved,
+   * so the normal game is still there afterwards.
+   */
+  setChallenge(ch) {
+    if (!ch && !this.ch) return;
+    this.ch = ch;
+    if (ch) return this.newGame();
+    const saved = this.load();
+    if (!saved) return this.newGame();
+    this.cancel();
+    this.finishing = 0;
+    this.failed = false;
+    this.game = saved.game;
+    this.elapsed = saved.elapsed;
+    this.started = this.game.moves > 0;
+    this.wonShown = false;
+    this.winEl.classList.remove('show');
+    this.syncCards();
+    this.afterChange();
+  }
+
+  /** A challenge's limit was hit: the game is over. */
+  fail(reason) {
+    if (this.failed || this.game.won) return;
+    this.failed = true;
+    this.finishing = 0;
+    this.cancel();
+    this.winEl.querySelector('.game-win-title').textContent = 'You lost';
+    this.winEl.querySelector('.game-win-stats').textContent = reason;
+    this.winEl.classList.add('show');
+  }
+
   newGame() {
     this.cancel();
     this.finishing = 0;
-    this.game = new Klondike(this.game.drawCount);
+    this.failed = false;
+    const mods = this.ch?.mods;
+    this.game = new Klondike(mods?.draw ?? (Number(localStorage.getItem(DRAW_KEY)) === 3 ? 3 : 1));
+    if (mods?.passes) this.game.maxPasses = mods.passes;
+    this.winEl.querySelector('.game-win-title').textContent = 'You won!';
     this.syncCards();
     this.elapsed = 0;
     this.started = false;
@@ -489,6 +531,7 @@ export class SolitaireScene {
   }
 
   toggleDrawCount() {
+    if (this.ch) return; // the challenge sets it
     const next = this.game.drawCount === 3 ? 1 : 3;
     localStorage.setItem(DRAW_KEY, String(next));
     // Changing the rules mid-game isn't fair; it applies right away only if no move has been made.
@@ -498,7 +541,7 @@ export class SolitaireScene {
   }
 
   undo() {
-    if (this.finishing || this.drag) return;
+    if (this.finishing || this.drag || this.ch?.mods.undo === false) return;
     if (this.game.undo()) this.afterChange();
   }
 
@@ -510,6 +553,8 @@ export class SolitaireScene {
     if (this.game.moves > 0) this.started = true;
     this.save();
     this.updateHUD();
+    const maxMoves = this.ch?.mods.maxMoves;
+    if (maxMoves && !this.game.won && !this.finishing && this.game.moves >= maxMoves) this.fail(`Out of moves: all ${maxMoves} used`);
     if (this.game.won && !this.wonShown) {
       this.wonShown = true;
       this.finishing = 0;
@@ -535,16 +580,19 @@ export class SolitaireScene {
 
   updateHUD() {
     const g = this.game;
-    this.undoBtn.disabled = !g.history.length || g.won;
+    this.undoBtn.disabled = !g.history.length || g.won || this.ch?.mods.undo === false;
+    this.drawBtn.hidden = !!this.ch;
     this.drawBtn.textContent = `Draw ${g.drawCount}`;
     this.drawBtn.title = 'Cards drawn from the stock per tap. Starts a new game if one is in progress.';
     this.finishBtn.hidden = !g.canAutoFinish;
-    this.slotEls.stock.classList.toggle('can-recycle', !g.piles.stock.length && g.piles.waste.length > 0);
+    this.slotEls.stock.classList.toggle('can-recycle', !g.piles.stock.length && g.piles.waste.length > 0 && g.passes + 1 < g.maxPasses);
     this.updateStats(true);
   }
 
   updateStats(force) {
-    const text = `${fmtMoves(this.game.moves)} · ${fmtTime(this.elapsed)}`;
+    const mods = this.ch?.mods;
+    // In a challenge the limits are part of the line: 12/140 moves, 1:20 / 5:00.
+    const text = `${mods?.maxMoves ? `${this.game.moves}/${mods.maxMoves} moves` : fmtMoves(this.game.moves)} · ${fmtTime(this.elapsed)}${mods?.timeLimit ? ` / ${fmtTime(mods.timeLimit * 1000)}` : ''}`;
     if (force || text !== this._stats) {
       this.statsEl.textContent = text;
       this._stats = text;
@@ -580,6 +628,7 @@ export class SolitaireScene {
   // ----------------------------------------------------------- persistence
 
   save() {
+    if (this.ch) return; // a challenge game is not the saved game
     try {
       if (this.game.won) localStorage.removeItem(SAVE_KEY);
       else localStorage.setItem(SAVE_KEY, JSON.stringify({ ...this.game.serialize(), elapsed: Math.round(this.elapsed) }));

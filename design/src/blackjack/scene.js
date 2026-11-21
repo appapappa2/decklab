@@ -4,6 +4,7 @@
 // keeping its own picture of the table (`vis`) in step with the animation.
 import { CardSprite, cardBackHTML } from '../cards.js?v=fourcolor';
 import { Blackjack, CHIPS, START_BANK, handValue } from './rules.js';
+import { recordWin } from '../progress.js?v=fourcolor';
 
 const SAVE_KEY = 'thedeck.blackjack.v1';
 const CARD_MS = 380; // between dealt cards
@@ -28,6 +29,8 @@ export class BlackjackScene {
     this.queue = [];
     this.vis = { dealer: [], hands: [], active: -1, discard: [], results: null };
     this.leaving = [];
+    this.ch = null; // the challenge being played (challenges.js), or null
+    this.rounds = 0; // deals finished in it
     this.game = this.load() ?? new Blackjack();
     this.shownBank = this.game.bank;
     this.buildDOM();
@@ -79,7 +82,18 @@ export class BlackjackScene {
     this.splitBtn = this.button(this.actRow, 'Split', () => this.act('split'));
     this.controls.append(this.betLine, this.betRow, this.actRow);
 
-    r.append(this.shoeEl, this.cardsEl, this.dealerLabel, this.bannerEl, this.ruleEl, top, this.controls);
+    // The result card. Normal blackjack never ends, so only challenges show it.
+    this.overEl = h('div', 'game-win');
+    const card = h('div', 'game-win-card');
+    this.overTitle = h('div', 'game-win-title');
+    this.overStats = h('div', 'game-win-stats');
+    const row = h('div', 'game-win-actions');
+    this.button(row, 'Play again', () => this.setChallenge(this.ch, true), 'accent');
+    this.button(row, 'Lobby', () => this.onExit());
+    card.append(this.overTitle, this.overStats, row);
+    this.overEl.append(card);
+
+    r.append(this.shoeEl, this.cardsEl, this.dealerLabel, this.bannerEl, this.ruleEl, top, this.controls, this.overEl);
 
     // Keep the lab's Input on #screen from seeing these events.
     for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'touchstart']) {
@@ -183,6 +197,43 @@ export class BlackjackScene {
     this.updateHUD();
   }
 
+  /**
+   * Starts (or ends, with null) a challenge: a starting bank, and a target to
+   * reach, a number of deals to survive, a minimum bet. Its bank is never
+   * saved, so your own bank is still there afterwards.
+   */
+  setChallenge(ch, again = false) {
+    if (!ch && !this.ch) return;
+    if (!again && !ch) this.ch = null;
+    else this.ch = ch;
+    const mods = this.ch?.mods;
+    this.queue = [];
+    this.rounds = 0;
+    this.overEl.classList.remove('show');
+    this.game = mods ? new Blackjack({ bank: mods.bank, bet: Math.min(mods.bank, Math.max(25, mods.minBet ?? 0)) }) : (this.load() ?? new Blackjack());
+    this.shownBank = this.game.bank;
+    this.clearTable(false);
+    this.updateHUD();
+  }
+
+  /** After each settled deal of a challenge: is it won or lost yet? */
+  checkChallenge() {
+    const mods = this.ch?.mods;
+    if (!mods) return;
+    this.rounds++;
+    const bank = this.game.bank;
+    const floor = Math.max(CHIPS[0], mods.minBet ?? 0);
+    let won = null;
+    let why = '';
+    if (mods.target && bank >= mods.target) (won = true), (why = `Bank ${fmt(bank)}: you reached ${fmt(mods.target)}`);
+    else if (mods.rounds && this.rounds >= mods.rounds) (won = bank > mods.bank), (why = `${fmt(bank)} after ${mods.rounds} deals (you started with ${fmt(mods.bank)})`);
+    else if (bank < floor) (won = false), (why = mods.minBet && bank >= CHIPS[0] ? `Bank ${fmt(bank)}: not enough for the minimum bet` : 'Out of chips');
+    if (won == null) return;
+    this.overTitle.textContent = won ? 'You won!' : 'You lost';
+    this.overStats.textContent = why;
+    setTimeout(() => this.ch && this.overEl.classList.add('show'), 1300);
+  }
+
   resetBank() {
     const stats = this.game.stats;
     this.game = new Blackjack();
@@ -195,6 +246,7 @@ export class BlackjackScene {
 
   deal() {
     if (this.busy || !this.game.canDeal) return;
+    if (this.ch?.mods.minBet && this.game.bet < this.ch.mods.minBet) return;
     this.clearTable(true);
     const ev = this.game.deal();
     this.play(ev);
@@ -322,6 +374,8 @@ export class BlackjackScene {
     else (text = 'Push'), (kind = 'push');
     this.banner(text, kind);
     this.haptic(net > 0 ? [10, 40, 10] : 8);
+    if (net > 0) recordWin('blackjack'); // blackjack has no end: a winning deal is "winning the game" (rank, challenges)
+    this.checkChallenge();
     this.updateHUD();
   }
 
@@ -425,20 +479,23 @@ export class BlackjackScene {
     const g = this.game;
     const busy = this.busy;
     const between = g.phase !== 'play';
-    this.bankEl.textContent = `Bank ${fmt(this.shownBank)}`;
+    const mods = this.ch?.mods;
+    // In a challenge the goal is part of the line: Bank 200 / 400, or deal 3/10.
+    this.bankEl.textContent = `Bank ${fmt(this.shownBank)}${mods?.target ? ` / ${fmt(mods.target)}` : ''}${mods?.rounds ? ` · deal ${Math.min(this.rounds + 1, mods.rounds)}/${mods.rounds}` : ''}`;
     const broke = between && !busy && g.bank < CHIPS[0];
+    const low = !!mods?.minBet && g.bet < mods.minBet; // under the challenge's minimum bet
     this.betRow.style.display = between ? '' : 'none';
     this.actRow.style.display = between ? 'none' : '';
-    this.betLine.textContent = broke ? 'Out of chips' : between ? `Bet ${fmt(g.bet)}` : `Bet ${fmt(g.wagered)} on the table`;
+    this.betLine.textContent = broke ? 'Out of chips' : between ? `Bet ${fmt(g.bet)}${low ? ` · minimum ${fmt(mods.minBet)}` : ''}` : `Bet ${fmt(g.wagered)} on the table`;
     for (const b of this.betRow.querySelectorAll('.bj-chip')) {
       b.disabled = busy || broke || g.bet + Number(b.textContent) > g.bank;
       b.hidden = broke;
     }
     this.clearBtn.hidden = broke;
     this.dealBtn.hidden = broke;
-    this.resetBtn.hidden = !broke;
+    this.resetBtn.hidden = !broke || !!this.ch;
     this.clearBtn.disabled = busy || !g.bet;
-    this.dealBtn.disabled = busy || !g.canDeal;
+    this.dealBtn.disabled = busy || !g.canDeal || low;
     this.dealBtn.textContent = g.phase === 'done' ? `Deal again · ${fmt(g.bet)}` : `Deal · ${fmt(g.bet)}`;
     this.hitBtn.disabled = busy || !g.canHit;
     this.standBtn.disabled = busy || !g.canStand;
@@ -472,6 +529,7 @@ export class BlackjackScene {
   // ----------------------------------------------------------- persistence
 
   save() {
+    if (this.ch) return; // a challenge's bank is not your bank
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.game.serialize()));
     } catch {

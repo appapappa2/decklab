@@ -623,6 +623,11 @@ export class GinScene {
     this.toastTimer = setTimeout(() => this.toastEl.classList.remove('show'), 2000);
   }
 
+  /** Did this seat win the match? */
+  seatWon(seat) {
+    return this.rules?.phase === 'over' && this.rules.winner === seat;
+  }
+
   showBoard() {
     const r = this.rules;
     const last = r.lastHand;
